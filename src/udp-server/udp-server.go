@@ -2,14 +2,20 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"encoding/binary"
 	"encoding/json"
 	"log"
 	"net"
 	"os"
+	"strconv"
+	"time"
+
+	"github.com/segmentio/kafka-go"
 )
 
-func handleClientMessage(clientAddress *net.UDPAddr, message []byte) {
+func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
+	kafkaTimeout time.Duration) {
 	// Parse packet header
 	header := PacketHeader{}
 	err := binary.Read(bytes.NewReader(message), binary.LittleEndian, &header)
@@ -128,10 +134,7 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte) {
 		return
 	}
 
-	// TODO: Send data to message broker
-	if topicName == TOPIC_CAR_MOTION_DATA {
-		log.Println(clientAddress, "- Topic:", topicName, "Parsed packet:", header.M_packetId, "->", string(jsonData))
-	}
+	sendMessageToKafka(kafkaProducer, topicName, string(jsonData), kafkaTimeout)
 }
 
 func parsePacketData(messageNoHeader []byte, packet any) (any, error) {
@@ -142,13 +145,94 @@ func parsePacketData(messageNoHeader []byte, packet any) (any, error) {
 	return packet, nil
 }
 
+func createKafkaTopics(address string, port string, topics []string) error {
+	conn, err := kafka.Dial("tcp", address+":"+port)
+	if err != nil {
+		return err
+	}
+	defer conn.Close()
+
+	controller, err := conn.Controller()
+	if err != nil {
+		return err
+	}
+
+	var controllerConn *kafka.Conn
+	controllerConn, err = kafka.Dial("tcp", net.JoinHostPort(controller.Host, strconv.Itoa(controller.Port)))
+	if err != nil {
+		return err
+	}
+	defer controllerConn.Close()
+
+	topicConfigs := make([]kafka.TopicConfig, len(topics))
+	for i, topic := range topics {
+		topicConfigs[i] = kafka.TopicConfig{
+			Topic:             topic,
+			NumPartitions:     1,
+			ReplicationFactor: 1,
+		}
+	}
+
+	return controllerConn.CreateTopics(topicConfigs...)
+}
+
+func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage string, timeout time.Duration) error {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	err := kafkaProducer.WriteMessages(ctx,
+		kafka.Message{
+			Topic: topic,
+			Value: []byte(jsonMessage),
+		},
+	)
+	select {
+	case <-ctx.Done():
+		log.Println("Kafka message timed out:", ctx.Err())
+		return ctx.Err()
+	default:
+		if err != nil {
+			log.Println("Error sending message to Kafka:", err)
+			return err
+		}
+	}
+
+	// TODO: Remove me
+	log.Println("Message sent to Kafka topic:", topic)
+	return nil
+}
+
 func main() {
-	// Get server port from environment variable
+	// Get environment variables
 	srv_port := os.Getenv("PORT")
 	if srv_port == "" {
 		log.Println("No PORT environment variable set, using default port", PORT)
 		srv_port = PORT
 	}
+	kafka_address := os.Getenv("KAFKA_ADDRESS")
+	if kafka_address == "" {
+		log.Println("No KAFKA_ADDRESS environment variable set, using default address", KAFKA_ADDRESS)
+		kafka_address = KAFKA_ADDRESS
+	}
+	kafka_port := os.Getenv("KAFKA_PORT")
+	if kafka_port == "" {
+		log.Println("No KAFKA_PORT environment variable set, using default port", KAFKA_PORT)
+		kafka_port = KAFKA_PORT
+	}
+
+	// Setup Apache Kafka topics
+	err := createKafkaTopics(kafka_address, kafka_port, MESSAGE_TOPICS[:])
+	if err != nil {
+		log.Fatalln("Error creating Kafka topics:", err)
+	}
+	log.Println("Kafka topics created successfully:", MESSAGE_TOPICS)
+
+	// Setup Kafka producer
+	producer := &kafka.Writer{
+		Addr:     kafka.TCP(kafka_address + ":" + kafka_port),
+		Balancer: &kafka.LeastBytes{},
+	}
+	defer producer.Close()
 
 	// Setup UDP server
 	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+srv_port)
@@ -172,6 +256,6 @@ func main() {
 			log.Println(clientAddr, "- Error reading:", err)
 		}
 
-		go handleClientMessage(clientAddr, buffer[:n])
+		go handleClientMessage(clientAddr, buffer[:n], producer, MESSAGE_TIMEOUT)
 	}
 }
