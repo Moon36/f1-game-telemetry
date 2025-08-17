@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"log"
 	"net"
+	"os"
 )
 
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte) {
@@ -142,8 +143,15 @@ func parsePacketData(messageNoHeader []byte, packet any) (any, error) {
 }
 
 func main() {
+	// Get server port from environment variable
+	srv_port := os.Getenv("PORT")
+	if srv_port == "" {
+		log.Println("No PORT environment variable set, using default port", PORT)
+		srv_port = PORT
+	}
+
 	// Setup UDP server
-	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+PORT)
+	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+srv_port)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -154,7 +162,7 @@ func main() {
 	}
 	defer con.Close()
 
-	log.Println("UDP server listening on", ADDR+":"+PORT)
+	log.Println("UDP server listening on", ADDR+":"+srv_port)
 
 	// Endless receive loop
 	for {
