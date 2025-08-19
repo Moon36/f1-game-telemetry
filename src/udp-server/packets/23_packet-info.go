@@ -1,4 +1,7 @@
-package main
+/*
+ * Contains all packet information for F1 2023
+ */
+package packets
 
 // === Packet ID to packet type map ===
 var PACKET_MAP = map[uint8]any{

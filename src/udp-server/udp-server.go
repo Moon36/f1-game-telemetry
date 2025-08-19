@@ -11,13 +11,15 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/moon36/f1-game-telemetry/src/udp-server/packets"
+
 	"github.com/segmentio/kafka-go"
 )
 
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
 	kafkaTimeout time.Duration) {
 	// Parse packet header
-	header := PacketHeader{}
+	header := packets.PacketHeader{}
 	err := binary.Read(bytes.NewReader(message), binary.LittleEndian, &header)
 	if err != nil {
 		log.Println(clientAddress, "- Error parsing header:", err)
@@ -27,96 +29,96 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 	headerSize := binary.Size(header)
 	messageNoHeader := message[headerSize:]
 
-	_, prst := PACKET_MAP[header.M_packetId]
+	_, prst := packets.PACKET_MAP[header.M_packetId]
 	if !prst {
 		log.Println(clientAddress, "- Unknown packet ID:", header.M_packetId)
 		return
 	}
 
 	// Generic packet variable and topic name
-	var packet any = PACKET_MAP[header.M_packetId]
-	var topicName string = PACKET_TOPIC_MAP[header.M_packetId]
+	var packet any = packets.PACKET_MAP[header.M_packetId]
+	var topicName string = packets.PACKET_TOPIC_MAP[header.M_packetId]
 
 	var packetData any
 
 	switch packet.(type) {
-	case PacketMotionData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketMotionData{})
-	case PacketSessionData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketSessionData{})
-	case PacketLapData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketLapData{})
-	case GenericEvent:
+	case packets.PacketMotionData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketMotionData{})
+	case packets.PacketSessionData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketSessionData{})
+	case packets.PacketLapData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketLapData{})
+	case packets.GenericEvent:
 		eventCode := string(messageNoHeader[:4])
-		_, prst = EVENT_MAP[eventCode]
+		_, prst = packets.EVENT_MAP[eventCode]
 		if !prst {
 			log.Println(clientAddress, "- Unknown event code:", eventCode)
 			return
 		}
-		packet = EVENT_MAP[eventCode]
+		packet = packets.EVENT_MAP[eventCode]
 
 		switch packet.(type) {
-		case PacketEventSSTA:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventSSTA{})
-		case PacketEventSEND:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventSEND{})
-		case PacketEventFTLP:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventFTLP{})
-		case PacketEventRTMT:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventRTMT{})
-		case PacketEventDRSE:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventDRSE{})
-		case PacketEventDRSD:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventDRSD{})
-		case PacketEventTMPT:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventTMPT{})
-		case PacketEventCHQF:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventCHQF{})
-		case PacketEventRCWN:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventRCWN{})
-		case PacketEventPENA:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventPENA{})
-		case PacketEventSPTP:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventSPTP{})
-		case PacketEventSTLG:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventSTLG{})
-		case PacketEventDTSV:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventDTSV{})
-		case PacketEventSGSV:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventSGSV{})
-		case PacketEventFLBK:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventFLBK{})
-		case PacketEventBUTN:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventBUTN{})
-		case PacketEventRDFL:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventRDFL{})
-		case PacketEventOVTK:
-			packetData, err = parsePacketData(messageNoHeader, &PacketEventOVTK{})
+		case packets.PacketEventSSTA:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSSTA{})
+		case packets.PacketEventSEND:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSEND{})
+		case packets.PacketEventFTLP:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventFTLP{})
+		case packets.PacketEventRTMT:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRTMT{})
+		case packets.PacketEventDRSE:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDRSE{})
+		case packets.PacketEventDRSD:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDRSD{})
+		case packets.PacketEventTMPT:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventTMPT{})
+		case packets.PacketEventCHQF:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventCHQF{})
+		case packets.PacketEventRCWN:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRCWN{})
+		case packets.PacketEventPENA:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventPENA{})
+		case packets.PacketEventSPTP:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSPTP{})
+		case packets.PacketEventSTLG:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSTLG{})
+		case packets.PacketEventDTSV:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDTSV{})
+		case packets.PacketEventSGSV:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSGSV{})
+		case packets.PacketEventFLBK:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventFLBK{})
+		case packets.PacketEventBUTN:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventBUTN{})
+		case packets.PacketEventRDFL:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRDFL{})
+		case packets.PacketEventOVTK:
+			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventOVTK{})
 		default:
 			log.Println(clientAddress, "- Unknown event code:", eventCode)
 			return
 		}
-		topicName = TOPIC_EVENT_DATA
-	case PacketParticipantsData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketParticipantsData{})
-	case PacketCarSetupData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketCarSetupData{})
-	case PacketCarTelemetryData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketCarTelemetryData{})
-	case PacketCarStatusData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketCarStatusData{})
-	case PacketFinalClassificationData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketFinalClassificationData{})
-	case PacketLobbyInfoData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketLobbyInfoData{})
-	case PacketCarDamageData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketCarDamageData{})
-	case PacketSessionHistoryData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketSessionHistoryData{})
-	case PacketTyreSetsData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketTyreSetsData{})
-	case PacketMotionExData:
-		packetData, err = parsePacketData(messageNoHeader, &PacketMotionExData{})
+		topicName = packets.TOPIC_EVENT_DATA
+	case packets.PacketParticipantsData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketParticipantsData{})
+	case packets.PacketCarSetupData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarSetupData{})
+	case packets.PacketCarTelemetryData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarTelemetryData{})
+	case packets.PacketCarStatusData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarStatusData{})
+	case packets.PacketFinalClassificationData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketFinalClassificationData{})
+	case packets.PacketLobbyInfoData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketLobbyInfoData{})
+	case packets.PacketCarDamageData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarDamageData{})
+	case packets.PacketSessionHistoryData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketSessionHistoryData{})
+	case packets.PacketTyreSetsData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketTyreSetsData{})
+	case packets.PacketMotionExData:
+		packetData, err = parsePacketData(messageNoHeader, &packets.PacketMotionExData{})
 	default:
 		log.Println(clientAddress, "- Unknown packet type:", packet)
 		return
@@ -221,11 +223,11 @@ func main() {
 	}
 
 	// Setup Apache Kafka topics
-	err := createKafkaTopics(kafka_address, kafka_port, MESSAGE_TOPICS[:])
+	err := createKafkaTopics(kafka_address, kafka_port, packets.MESSAGE_TOPICS[:])
 	if err != nil {
 		log.Fatalln("Error creating Kafka topics:", err)
 	}
-	log.Println("Kafka topics created successfully:", MESSAGE_TOPICS)
+	log.Println("Kafka topics created successfully:", packets.MESSAGE_TOPICS)
 
 	// Setup Kafka producer
 	producer := &kafka.Writer{
@@ -250,7 +252,7 @@ func main() {
 
 	// Endless receive loop
 	for {
-		buffer := make([]byte, MAX_BUFFER_SIZE)
+		buffer := make([]byte, packets.MAX_BUFFER_SIZE)
 		n, clientAddr, err := con.ReadFromUDP(buffer)
 		if err != nil {
 			log.Println(clientAddr, "- Error reading:", err)
