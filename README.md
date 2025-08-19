@@ -6,7 +6,7 @@ A dashboard for visualizing telemetry data from F1 games.
 
 
 ## Current Development Status
-- [ ] Implement UDP server to receive telemetry data
-- [ ] Integrate message broker
+- [X] Implement UDP server to receive telemetry data
+- [X] Integrate message broker
 - [ ] Implement message consumer & statistics backend
 - [ ] Develop frontend dashboard

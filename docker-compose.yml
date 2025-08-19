@@ -1,0 +1,51 @@
+services:
+  telemetry-receiver:
+    user: "1000:1000"
+    container_name: Telemetry-Receiver
+    environment:
+      - PORT=${UDP_PORT}
+      - KAFKA_ADDRESS=${KAFKA_ADDRESS}
+      - KAFKA_PORT=${KAFKA_PORT}
+    build:
+      context: .
+      dockerfile: src/udp-server/Dockerfile
+    ports:
+      - "${UDP_PORT}:${UDP_PORT}/udp"
+    restart: unless-stopped
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  kafka:
+    image: bitnami/kafka:latest
+    container_name: Kafka
+    ports:
+      - "${KAFKA_PORT}:${KAFKA_PORT}"
+    volumes:
+      - kafka_data:/bitnami/kafka
+    environment:
+      # KRaft settings
+      - KAFKA_CFG_NODE_ID=0
+      - KAFKA_CFG_PROCESS_ROLES=broker,controller
+      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:${KAFKA_CONTROLLER_PORT}
+
+      # Listeners
+      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_ADDRESS}:${KAFKA_PORT}
+      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+
+      # Topic settings
+      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
+      - KAFKA_CFG_NUM_PARTITIONS=1
+      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:${KAFKA_PORT} --list"]
+      interval: 10s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
+
+volumes:
+  kafka_data:
+    driver: local
