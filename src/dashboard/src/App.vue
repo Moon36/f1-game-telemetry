@@ -32,7 +32,7 @@
           :key="widget.id"
           @click="toggleWidget(widget.id)"
           :class="`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
-            ${widgets.values().find((w) => w.id === widget.id)?.visible ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`"
+            ${widget.visible ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`"
         >
           <span v-html="widget.icon" class="mr-2 lucide"></span>
           <span>{{ widget.name }}</span>
