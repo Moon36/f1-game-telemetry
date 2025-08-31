@@ -1,8 +1,19 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 
-// Access Vite environment variables
-const wsPort = import.meta.env.VITE_DASHBOARD_PORT || '8080'
+// Create a runtime config
+declare global {
+  interface Window {
+    APP_CONFIG?: {
+      BACKEND_PORT: string
+    }
+  }
+}
+
+const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? console.error('WebSocket port is not defined')
+// ToDo: Handle undefined websocket port
+
+console.log(`WebSocket port is set to: ${wsPort}`)
 
 /*
 // Create WebSocket connection

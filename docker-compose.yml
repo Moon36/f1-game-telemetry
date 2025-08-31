@@ -50,6 +50,7 @@ services:
     container_name: Dashboard
     environment:
       - DASHBOARD_PORT=${DASHBOARD_PORT}
+      - BACKEND_PORT=${BACKEND_PORT}
     build:
       context: src/dashboard/
       dockerfile: Dockerfile
