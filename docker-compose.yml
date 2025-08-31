@@ -45,6 +45,17 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+  
+  dashboard:
+    container_name: Dashboard
+    environment:
+      - DASHBOARD_PORT=${DASHBOARD_PORT}
+    build:
+      context: src/dashboard/
+      dockerfile: Dockerfile
+    ports:
+      - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
+    restart: unless-stopped
 
 volumes:
   kafka_data:
