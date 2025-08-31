@@ -6,26 +6,26 @@
     <div class="flex justify-center items-center h-full">
       <div class="grid grid-cols-2 gap-4">
         <div class="flex flex-col items-center">
-          <div class="text-2xl font-bold" :style="{ color: getTempColor(data[0]) }">
-            {{ data[0].toFixed(1) }}°C
+          <div class="text-2xl font-bold" :style="{ color: getTempColor(props.data?.[0]) }">
+            {{ props.data?.[0]?.toFixed(1) ?? '0.0' }}°C
           </div>
           <div class="text-sm text-gray-400">Rear Left</div>
         </div>
         <div class="flex flex-col items-center">
-          <div class="text-2xl font-bold" :style="{ color: getTempColor(data[1]) }">
-            {{ data[1].toFixed(1) }}°C
+          <div class="text-2xl font-bold" :style="{ color: getTempColor(props.data?.[1]) }">
+            {{ props.data?.[1]?.toFixed(1) ?? '0.0' }}°C
           </div>
           <div class="text-sm text-gray-400">Rear Right</div>
         </div>
         <div class="flex flex-col items-center">
-          <div class="text-2xl font-bold" :style="{ color: getTempColor(data[2]) }">
-            {{ data[2].toFixed(1) }}°C
+          <div class="text-2xl font-bold" :style="{ color: getTempColor(props.data?.[2]) }">
+            {{ props.data?.[2]?.toFixed(1) ?? '0.0' }}°C
           </div>
           <div class="text-sm text-gray-400">Front Left</div>
         </div>
         <div class="flex flex-col items-center">
-          <div class="text-2xl font-bold" :style="{ color: getTempColor(data[3]) }">
-            {{ data[3].toFixed(1) }}°C
+          <div class="text-2xl font-bold" :style="{ color: getTempColor(props.data?.[3]) }">
+            {{ props.data?.[3]?.toFixed(1) ?? '0.0' }}°C
           </div>
           <div class="text-sm text-gray-400">Front Right</div>
         </div>
@@ -35,7 +35,6 @@
 </template>
 
 <script setup lang="ts">
-import { defineProps } from 'vue'
 import ChartWrapper from '../ChartWrapper.vue'
 
 const tempColorCodes = {
@@ -44,17 +43,13 @@ const tempColorCodes = {
   hot: '#ef4444',
 }
 
-const props = defineProps({
-  data: {
-    type: Array,
-    required: true,
-    default: () => [0, 0, 0, 0],
-  },
-})
+const props = defineProps<{
+  data?: number[]
+}>()
 
 // TODO: Make this dependent on tyre compound and add intermediate colors
-function getTempColor(temp: number) {
-  if (temp < 95) return tempColorCodes.cold
+function getTempColor(temp: number | undefined): string {
+  if (!temp || temp < 95) return tempColorCodes.cold
   if (temp < 115) return tempColorCodes.warm
   return tempColorCodes.hot
 }
