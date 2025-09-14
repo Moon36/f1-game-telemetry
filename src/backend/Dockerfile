@@ -9,4 +9,4 @@ RUN pip install -r requirements.txt
 COPY backend.py .
 COPY utils/ utils/
 
-CMD ["python", "backend.py"]
+CMD ["python", "-u", "backend.py"]
