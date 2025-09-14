@@ -27,7 +27,7 @@ if __name__ == "__main__":
         sys_exit(1)
 
     try:
-        consumer_obj.subscribe(pattern='^telemetry.+')
+        consumer_obj.subscribe(pattern=r'^telemetry\..+')
         msg_consumer = consumer_obj.get_consumer()
         # Receive loop
         for message in msg_consumer:
