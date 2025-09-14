@@ -9,7 +9,12 @@ from utils.constants import KAFKA_DEFAULT_ADDRESS, KAFKA_DEFAULT_PORT
 
 
 class TelemetryConsumer:
-    """Kafka consumer for processing telemetry data."""
+    """
+    Kafka consumer for processing telemetry data.
+
+    :param address: Kafka broker address.
+    :param port: Kafka broker port.
+    """
     def __init__(self, address=KAFKA_DEFAULT_ADDRESS, port=KAFKA_DEFAULT_PORT):
         self.consumer = KafkaConsumer(
             bootstrap_servers=f"{address}:{port}",
@@ -21,7 +26,12 @@ class TelemetryConsumer:
         )
 
     def subscribe(self, topics: list|None=None, pattern: str=''):
-        """Subscribe to Kafka topics or patterns."""
+        """
+        Subscribe to Kafka topics or patterns.
+
+        :param topics: List of topics to subscribe to. If None, pattern must be provided.
+        :param pattern: Regex pattern to subscribe to topics. If empty, topics must be provided.
+        """
         if topics is None:
             topics = []
         if (not topics and not pattern) or (topics and pattern):
