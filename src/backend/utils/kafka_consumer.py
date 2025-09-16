@@ -1,7 +1,7 @@
 """
 Kafka consumer for processing telemetry data.
 """
-
+from collections.abc import Set
 import json
 from kafka import KafkaConsumer
 
@@ -25,18 +25,27 @@ class TelemetryConsumer:
             allow_auto_create_topics=False,
         )
 
-    def subscribe(self, topics: list|None=None, pattern: str=''):
+    def subscribe_to_pattern(self, pattern: str=''):
         """
-        Subscribe to Kafka topics or patterns.
+        Subscribe to Kafka topics via a regex pattern.
 
-        :param topics: List of topics to subscribe to. If None, pattern must be provided.
-        :param pattern: Regex pattern to subscribe to topics. If empty, topics must be provided.
+        :param pattern: Regex pattern to subscribe to topics.
+        :raises ValueError: If pattern is empty.
         """
-        if topics is None:
-            topics = []
-        if (not topics and not pattern) or (topics and pattern):
-            raise ValueError("Must provide either topics or pattern to subscribe.")
-        self.consumer.subscribe(topics=topics, pattern=pattern)
+        if not pattern:
+            raise ValueError("Pattern must not be empty.")
+        self.consumer.subscribe(pattern=pattern)
+
+    def subscribe_to_topics(self, topics: Set[str]):
+        """
+        Subscribe to Kafka topics.
+
+        :param topics: Set of topics to subscribe to.
+        :raises ValueError: If topics set is empty.
+        """
+        if not topics:
+            raise ValueError("Topics must not be empty.")
+        self.consumer.subscribe(topics=topics)
 
     def get_consumer(self):
         """Get the Kafka consumer instance."""
