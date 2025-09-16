@@ -4,7 +4,6 @@ Backend module for processing telemetry data.
 
 from os import getenv
 from sys import exit as sys_exit
-import json
 
 from kafka.errors import NoBrokersAvailable
 
