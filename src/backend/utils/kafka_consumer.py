@@ -1,7 +1,7 @@
 """
 Kafka consumer for processing telemetry data.
 """
-from collections.abc import Set
+from collections.abc import Sequence
 import json
 from kafka import KafkaConsumer
 
@@ -36,12 +36,12 @@ class TelemetryConsumer:
             raise ValueError("Pattern must not be empty.")
         self.consumer.subscribe(pattern=pattern)
 
-    def subscribe_to_topics(self, topics: Set[str]):
+    def subscribe_to_topics(self, topics: Sequence[str]):
         """
         Subscribe to Kafka topics.
 
-        :param topics: Set of topics to subscribe to.
-        :raises ValueError: If topics set is empty.
+        :param topics: Sequence of topics to subscribe to.
+        :raises ValueError: If topics sequence is empty.
         """
         if not topics:
             raise ValueError("Topics must not be empty.")
