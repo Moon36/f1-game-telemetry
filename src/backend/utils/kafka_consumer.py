@@ -25,7 +25,7 @@ class TelemetryConsumer:
             allow_auto_create_topics=False,
         )
 
-    def subscribe_to_pattern(self, pattern: str=''):
+    def subscribe_to_pattern(self, pattern: str):
         """
         Subscribe to Kafka topics via a regex pattern.
 
