@@ -58,6 +58,17 @@ services:
       - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
     restart: unless-stopped
 
+  backend:
+    build:
+      context: src/backend
+      dockerfile: Dockerfile
+    environment:
+      - KAFKA_ADDRESS=${KAFKA_ADDRESS}
+      - KAFKA_PORT=${KAFKA_PORT}
+    depends_on:
+      kafka:
+        condition: service_healthy
+
 volumes:
   kafka_data:
     driver: local
