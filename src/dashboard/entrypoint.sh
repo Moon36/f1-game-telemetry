@@ -4,7 +4,7 @@
 PORT=${DASHBOARD_PORT:-80}
 
 # Set default backend port if BACKEND_PORT is not provided
-BACKEND_PORT=${BACKEND_PORT}
+BACKEND_PORT=${BACKEND_PORT:-8282}
 
 # Inject configuration into the HTML
 CONFIG_SCRIPT="<script>window.APP_CONFIG = { BACKEND_PORT: '${BACKEND_PORT}' };</script>"
