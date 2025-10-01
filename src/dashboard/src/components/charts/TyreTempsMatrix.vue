@@ -54,3 +54,9 @@ function getTempColor(temp: number | undefined): string {
   return tempColorCodes.hot
 }
 </script>
+
+<script lang="ts">
+export default {
+  name: 'TyreTempsMatrix'
+}
+</script>

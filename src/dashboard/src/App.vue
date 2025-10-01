@@ -1,8 +1,13 @@
 <template>
-  <div id="app" class="p-4">
-    <header
-      class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg"
-    >
+  <div id="app">
+    <!-- Preloader -->
+    <Preloader @complete="onPreloaderComplete" />
+    
+    <!-- Main App Content -->
+    <div v-show="!showPreloader" class="p-4">
+      <header
+        class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg"
+      >
       <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0">
         <svg
           xmlns="http://www.w3.org/2000/svg"
@@ -40,15 +45,16 @@
       </div>
     </header>
 
-    <!-- Main Dashboard Grid Layout -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
-      <template v-for="widget in widgets" :key="widget.id">
-        <component 
-          v-if="widget.visible" 
-          :is="widget.component" 
-          :data="getWidgetData(widget)"
-        ></component>
-      </template>
+      <!-- Main Dashboard Grid Layout -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+        <template v-for="widget in widgets" :key="widget.id">
+          <component 
+            v-if="widget.visible" 
+            :is="widget.component" 
+            :data="getWidgetData(widget)"
+          ></component>
+        </template>
+      </div>
     </div>
   </div>
 </template>
@@ -56,16 +62,32 @@
 <style scoped></style>
 
 <script setup lang="ts">
-import { ref, markRaw } from 'vue'
-import TyreInfo from './components/charts/TyreTempsMatrix.vue'
+import { ref, markRaw, type Component } from 'vue'
+import TyreTempsMatrix from './components/charts/TyreTempsMatrix.vue'
+import Preloader from './components/ui/preloader.vue'
 import { store } from './store'
 
-const widgets = ref([
+// Preloader state
+const showPreloader = ref(true)
+
+const onPreloaderComplete = () => {
+  showPreloader.value = false
+}
+
+interface Widget {
+  id: string
+  name: string
+  icon: string
+  component: Component
+  visible: boolean
+}
+
+const widgets = ref<Widget[]>([
   {
     id: 'TyreInfo',
     name: 'Tyre Info',
     icon: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 14v6'></path><path d='M12 2a10 10 0 0 0-7.32 3.25'></path><path d='M12 2a10 10 0 0 1 7.32 3.25'></path><path d='M21 9a10 10 0 0 1-9 13 10 10 0 0 1-9-13'></path><path d='M3 9a10 10 0 0 1 9-7 10 10 0 0 1 9 7'></path></svg>`,
-    component: markRaw(TyreInfo),
+    component: markRaw(TyreTempsMatrix),
     visible: true
   },
   // Add more widgets as needed
@@ -78,11 +100,11 @@ function toggleWidget(widgetId: string) {
   }
 }
 
-function getWidgetData(widget: any) {
+function getWidgetData(widget: Widget) {
   if (widget.id === 'TyreInfo') {
     return store.tyreTemps
   }
   
-  return widget.data
+  return undefined
 }
 </script>
