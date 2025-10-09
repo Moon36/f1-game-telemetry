@@ -47,7 +47,7 @@ class TelemetryConsumer:
             raise ValueError("Topics must not be empty.")
         self.consumer.subscribe(topics=topics)
 
-    def get_consumer(self):
+    def get_consumer(self) -> KafkaConsumer:
         """Get the Kafka consumer instance."""
         return self.consumer
 
