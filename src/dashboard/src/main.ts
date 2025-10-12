@@ -11,7 +11,7 @@ declare global {
   }
 }
 
-const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? console.error('WebSocket port is not defined')
+const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? '8282'
 
 
 // Create WebSocket connection
