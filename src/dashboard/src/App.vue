@@ -3,6 +3,18 @@
     <header
       class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg"
     >
+      <span
+        class="w-3 h-3 rounded-full mr-3 relative group"
+        :class="store.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
+        style="box-shadow: 0 0 8px 2px currentColor;"
+        aria-label="Connection status"
+      >
+        <span
+          class="absolute left-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-900 text-gray-100 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+        >
+          {{ store.wsConnected ? 'Backend Connected' : 'Backend not Connected' }}
+        </span>
+      </span>
       <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0">
         <svg
           xmlns="http://www.w3.org/2000/svg"

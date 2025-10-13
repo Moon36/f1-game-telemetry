@@ -12,17 +12,45 @@ declare global {
 }
 
 const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? '8282'
+const reconnectInterval = 1000
 
 
 // Create WebSocket connection
-const ws = new WebSocket(`ws://localhost:${wsPort}`)
+connectWebSocket(wsPort)
 
-ws.onopen = () => {
-  console.log('WebSocket connected')
+function connectWebSocket(port: string) {
+  console.log(`Trying to connect to WebSocket on port ${port}...`)
+  const ws = new WebSocket(`ws://localhost:${port}`)
+  ws.onopen = () => {
+    console.log('WebSocket connected')
+    store.wsConnected = true
+  }
+
+  ws.onmessage = (event) => {
+    handleWSMessage(event)
+  };
+
+  ws.onclose = function (event) {
+    console.log('Socket was closed.', event.reason);
+    store.wsConnected = false
+    setTimeout(function () {
+      connectWebSocket(port);
+    }, reconnectInterval);
+  };
+
+  ws.onerror = (error) => {
+    console.error('WebSocket error:', error)
+    ws.close()
+    store.wsConnected = false
+    //console.log('Socket is closed. Reconnect will be attempted in 1 second.', error);
+    setTimeout(function () {
+      connectWebSocket(port);
+    }, reconnectInterval);
+  };
 }
 
-ws.onmessage = (event) => {
-  let data: any
+function handleWSMessage(event: MessageEvent) {
+  let data
   try {
     data = JSON.parse(event.data)
   } catch (err) {
@@ -33,14 +61,22 @@ ws.onmessage = (event) => {
   switch (data?.topic) {
     case 'telemetry.car_telemetry': {
       // Handle car telemetry data
-      const newTemps = data['data']['M_carTelemetry'][0]['M_tyresInnerTemperature']
+      const newInnerTemps = data['data']['M_carTelemetry'][0]['M_tyresInnerTemperature']
+      const newOuterTemps = data['data']['M_carTelemetry'][0]['M_tyresSurfaceTemperature']
 
       // Mutate array in place to keep reactivity
-      if (Array.isArray(newTemps) && newTemps.length === 4) {
-        store.tyreTemps.splice(0, 4, ...newTemps)
-        console.log('Updated tyre temperatures:', store.tyreTemps)
+      if (Array.isArray(newInnerTemps) && newInnerTemps.length === 4) {
+        store.innerTyreTemps.splice(0, 4, ...newInnerTemps)
+        console.log('Updated inner tyre temperatures:', store.innerTyreTemps)
       } else {
-        console.warn('Invalid tyre temperature data:', newTemps)
+        console.warn('Invalid inner tyre temperature data:', newInnerTemps)
+      }
+
+      if (Array.isArray(newOuterTemps) && newOuterTemps.length === 4) {
+        store.outerTyreTemps.splice(0, 4, ...newOuterTemps)
+        console.log('Updated outer tyre temperatures:', store.outerTyreTemps)
+      } else {
+        console.warn('Invalid outer tyre temperature data:', newOuterTemps)
       }
       break
     }
@@ -48,10 +84,6 @@ ws.onmessage = (event) => {
       // ignore other topics
       break
   }
-}
-
-ws.onerror = (error) => {
-  console.error('WebSocket error:', error)
 }
 
 
