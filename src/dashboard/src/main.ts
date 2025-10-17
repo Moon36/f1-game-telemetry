@@ -42,10 +42,6 @@ function connectWebSocket(port: string) {
     console.error('WebSocket error:', error)
     ws.close()
     store.wsConnected = false
-    //console.log('Socket is closed. Reconnect will be attempted in 1 second.', error);
-    setTimeout(function () {
-      connectWebSocket(port);
-    }, reconnectInterval);
   };
 }
 
