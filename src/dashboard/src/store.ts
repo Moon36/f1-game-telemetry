@@ -2,5 +2,6 @@ import { reactive } from 'vue'
 
 export const store = reactive({
   wsConnected: false,
-  tyreTemps: [0, 0, 0, 0] as number[],
+  innerTyreTemps: [0, 0, 0, 0] as number[],
+  outerTyreTemps: [0, 0, 0, 0] as number[],
 })
