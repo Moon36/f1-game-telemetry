@@ -15,5 +15,5 @@
 <script setup lang="ts">
 import { defineProps } from 'vue'
 
-defineProps(['title', 'icon'])
+defineProps(['title', 'icon', 'data'])
 </script>

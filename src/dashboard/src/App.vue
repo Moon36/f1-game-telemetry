@@ -41,8 +41,7 @@
         <component 
           v-if="widget.visible" 
           :is="widget.component" 
-          :innerTemp="getWidgetData(widget.id) ? getWidgetData(widget.id)[0] : [0, 0, 0, 0]"
-          :outerTemp="getWidgetData(widget.id) ? getWidgetData(widget.id)[1] : [0, 0, 0, 0]"
+          :data="getWidgetData(widget.id)"
         ></component>
       </template>
     </div>
@@ -76,9 +75,9 @@ function toggleWidget(widgetId: string) {
 
 function getWidgetData(widgetId: string) {
   if (widgetId === 'TyreInfo') {
-    return [store.innerTyreTemps, store.outerTyreTemps]
+    return { 'innerTemp': store.innerTyreTemps, 'outerTemp': store.outerTyreTemps }
   }
   
-  return null
+  return {}
 }
 </script>
