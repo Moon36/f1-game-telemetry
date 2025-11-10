@@ -34,39 +34,39 @@
         </button>
       </div>
     </header>
-
     <!-- Main Dashboard Grid Layout -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 auto-rows-fr">
+    <div class="flex flex-wrap gap-6">
       <template v-for="widget in widgets" :key="widget.id">
+      <div v-if="widget.visible" class="w-fit h-fit">
         <component 
-          v-if="widget.visible" 
-          :is="widget.component" 
-          :data="getWidgetData(widget.id)"
+        :is="widget.component" 
+        :data="getWidgetData(widget.id)"
         ></component>
+      </div>
       </template>
     </div>
-  </div>
-</template>
+    </div>
+  </template>
 
-<style scoped></style>
+  <style scoped></style>
 
-<script setup lang="ts">
-import { ref, markRaw } from 'vue'
-import TyreInfo from './components/charts/TyreTempsMatrix.vue'
-import { store } from './store'
+  <script setup lang="ts">
+  import { ref, markRaw } from 'vue'
+  import TyreInfo from './components/charts/TyreTempsMatrix.vue'
+  import { store } from './store'
 
-const widgets = ref([
-  {
+  const widgets = ref([
+    {
     id: 'TyreInfo',
     name: 'Tyre Info',
     icon: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 14v6'></path><path d='M12 2a10 10 0 0 0-7.32 3.25'></path><path d='M12 2a10 10 0 0 1 7.32 3.25'></path><path d='M21 9a10 10 0 0 1-9 13 10 10 0 0 1-9-13'></path><path d='M3 9a10 10 0 0 1 9-7 10 10 0 0 1 9 7'></path></svg>`,
     component: markRaw(TyreInfo),
     visible: true
-  },
-  // Add more widgets as needed
-])
+    },
+    // Add more widgets as needed
+  ])
 
-function toggleWidget(widgetId: string) {
+  function toggleWidget(widgetId: string) {
   const widget = widgets.value.find((w) => w.id === widgetId)
   if (widget) {
     widget.visible = !widget.visible
