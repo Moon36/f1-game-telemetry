@@ -76,6 +76,16 @@ function handleWSMessage(event: MessageEvent) {
       }
       break
     }
+    case 'telemetry.car_status': {
+      // Handle car status data
+      const compoundId = data['data']['M_carStatusData'][0]['M_actualTyreCompound']
+      if (typeof compoundId === 'number') {
+        store.actualTyreCompoundId = compoundId
+      } else {
+        console.warn('Invalid tyre compound ID data:', compoundId)
+      }
+      break
+    }
     default:
       // ignore other topics
       break

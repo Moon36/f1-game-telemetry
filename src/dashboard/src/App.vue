@@ -75,7 +75,7 @@ function toggleWidget(widgetId: string) {
 
 function getWidgetData(widgetId: string) {
   if (widgetId === 'TyreInfo') {
-    return { 'innerTemp': store.innerTyreTemps, 'outerTemp': store.outerTyreTemps }
+    return { 'innerTemp': store.innerTyreTemps, 'outerTemp': store.outerTyreTemps, 'compound': store.actualTyreCompoundId }
   }
   
   return {}
