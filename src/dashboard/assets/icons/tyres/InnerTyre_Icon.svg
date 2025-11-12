@@ -1,0 +1,29 @@
+<svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 20 20"
+>
+    <g id="OuterTyre">
+        <!-- Outer tyre -->
+        <circle
+            cx="10"
+            cy="10"
+            r="9"
+            stroke="lightgray"
+            stroke-width="2"
+            fill="none"
+            opacity="1"
+        />
+    </g>
+    <g id="InnerTyre">
+        <!-- Inner tyre -->
+        <circle
+            cx="10"
+            cy="10"
+            r="4"
+            fill="lightgray"
+            opacity="1"
+        />
+    </g>
+</svg>

@@ -32,3 +32,22 @@ jobs:
     - name: Analysing backend with pylint
       run: |
         pylint --rcfile=${{ github.workspace }}/.github/workflows/.pylintrc $(git ls-files 'src/backend/*.py')
+  lint-frontend:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '>=24.7.0'
+
+      - name: Lint and Tidy Dashboard
+        working-directory: ./src/dashboard
+        run: |
+          npm install
+          npm run lint
+

@@ -2,13 +2,13 @@ services:
   telemetry-receiver:
     user: "1000:1000"
     container_name: Telemetry-Receiver
+    build:
+      context: .
+      dockerfile: src/udp-server/Dockerfile
     environment:
       - PORT=${UDP_PORT}
       - KAFKA_ADDRESS=${KAFKA_ADDRESS}
       - KAFKA_PORT=${KAFKA_PORT}
-    build:
-      context: .
-      dockerfile: src/udp-server/Dockerfile
     ports:
       - "${UDP_PORT}:${UDP_PORT}/udp"
     restart: unless-stopped
@@ -45,14 +45,30 @@ services:
       timeout: 10s
       retries: 5
       start_period: 30s
+  
+  dashboard:
+    container_name: Dashboard
+    build:
+      context: src/dashboard/
+      dockerfile: Dockerfile
+    environment:
+      - DASHBOARD_PORT=${DASHBOARD_PORT}
+      - BACKEND_PORT=${BACKEND_PORT}
+    ports:
+      - "${DASHBOARD_PORT}:${DASHBOARD_PORT}"
+    restart: unless-stopped
 
   backend:
+    container_name: Backend
     build:
       context: src/backend
       dockerfile: Dockerfile
     environment:
       - KAFKA_ADDRESS=${KAFKA_ADDRESS}
       - KAFKA_PORT=${KAFKA_PORT}
+      - BACKEND_PORT=${BACKEND_PORT}
+    ports:
+      - "${BACKEND_PORT}:${BACKEND_PORT}"
     depends_on:
       kafka:
         condition: service_healthy
