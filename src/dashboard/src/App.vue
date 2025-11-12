@@ -52,7 +52,7 @@
 
   <script setup lang="ts">
   import { ref, markRaw } from 'vue'
-  import TyreInfo from './components/charts/TyreTempsMatrix.vue'
+  import TyreInfo from './components/charts/TyreTempsWidget.vue'
   import { store } from './store'
 
   const widgets = ref([
