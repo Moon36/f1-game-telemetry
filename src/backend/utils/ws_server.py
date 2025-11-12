@@ -51,7 +51,7 @@ class WebSocketServer:
             self.server.close()
 
 
-    async def client_connect(self, websocket: websockets.WebSocketServerProtocol):
+    async def client_connect(self, websocket: websockets.ServerConnection):
         """
         Handle new client connection.
         
@@ -103,6 +103,6 @@ class WebSocketServer:
             except websockets.exceptions.ConnectionClosed:
                 # Remove disconnected clients
                 await self.client_disconnect(client)
-            except (websockets.exceptions.ConnectionClosed, websockets.exceptions.WebSocketException) as e:
+            except websockets.exceptions.WebSocketException as e:
                 print(f"Error sending to client: {e}")
                 await self.client_disconnect(client)
