@@ -8,13 +8,14 @@ from sys import exit as sys_exit
 
 from kafka.errors import NoBrokersAvailable
 
-from utils.constants import KAFKA_DEFAULT_ADDRESS, KAFKA_DEFAULT_PORT, BACKEND_DEFAULT_PORT
+from utils import constants
 from utils.kafka_consumer import TelemetryConsumer
 from utils.ws_server import WebSocketServer
 
 
 def __message_consumer_blocking_loop__(
     consumer_obj: TelemetryConsumer,
+    kafka_topic_pattern: str,
     ws_server: WebSocketServer,
     loop: asyncio.AbstractEventLoop
 ):
@@ -27,9 +28,9 @@ def __message_consumer_blocking_loop__(
     :param loop: The main event loop to schedule the async broadcast tasks.
     """
     try:
-        consumer_obj.subscribe_to_pattern(r'^telemetry\..+')
+        consumer_obj.subscribe_to_pattern(kafka_topic_pattern)
         msg_consumer = consumer_obj.get_consumer()
-        print('Consumer subscribed to topics matching pattern: telemetry.*')
+        print(f'Consumer subscribed to topics matching pattern: {kafka_topic_pattern}')
 
         for record in msg_consumer:
             print(f"Received message on topic {record.topic}")
@@ -44,7 +45,7 @@ def __message_consumer_blocking_loop__(
         consumer_obj.close()
 
 
-async def kafka_consumer_task(consumer_obj: TelemetryConsumer, ws_server: WebSocketServer):
+async def kafka_consumer_task(consumer_obj: TelemetryConsumer, kafka_topic_pattern: str, ws_server: WebSocketServer):
     """
     Runs the Kafka consumer in a separate thread.
     
@@ -56,6 +57,7 @@ async def kafka_consumer_task(consumer_obj: TelemetryConsumer, ws_server: WebSoc
         None,  # Use the default thread pool executor
         __message_consumer_blocking_loop__,
         consumer_obj,
+        kafka_topic_pattern,
         ws_server,
         loop
     )
@@ -64,9 +66,9 @@ async def kafka_consumer_task(consumer_obj: TelemetryConsumer, ws_server: WebSoc
 async def main():
     """Main async function to coordinate WebSocket server and Kafka consumer."""
     args = {
-        'kafka_address': getenv('KAFKA_ADDRESS', KAFKA_DEFAULT_ADDRESS),
-        'kafka_port': getenv('KAFKA_PORT', KAFKA_DEFAULT_PORT),
-        'ws_port': getenv('BACKEND_PORT', BACKEND_DEFAULT_PORT)
+        'kafka_address': getenv('KAFKA_ADDRESS', constants.KAFKA_DEFAULT_ADDRESS),
+        'kafka_port': getenv('KAFKA_PORT', constants.KAFKA_DEFAULT_PORT),
+        'ws_port': getenv('BACKEND_PORT', constants.BACKEND_DEFAULT_PORT)
     }
 
     print('Starting consumer on', args['kafka_address'], args['kafka_port'])
@@ -82,7 +84,7 @@ async def main():
 
     async with ws_server:
         print("WebSocket server started")
-        consumer_task = asyncio.create_task(kafka_consumer_task(consumer_obj, ws_server))
+        consumer_task = asyncio.create_task(kafka_consumer_task(consumer_obj, constants.KAFKA_TOPIC_PATTERN, ws_server))
         await consumer_task
 
 
