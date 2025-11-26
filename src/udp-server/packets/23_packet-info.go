@@ -427,54 +427,54 @@ type PacketEventOVTK struct {
 
 // Define event type structs
 type FastestLap struct {
-	vehicleIdx uint8   // Vehicle index of car achieving fastest lap
-	lapTime    float32 // Lap time is in seconds
+	VehicleIdx uint8   // Vehicle index of car achieving fastest lap
+	LapTime    float32 // Lap time is in seconds
 }
 type Retirement struct {
-	vehicleIdx uint8 // Vehicle index of car retiring
+	VehicleIdx uint8 // Vehicle index of car retiring
 }
 type TeamMateInPits struct {
-	vehicleIdx uint8 // Vehicle index of team mate
+	VehicleIdx uint8 // Vehicle index of team mate
 }
 type RaceWinner struct {
-	vehicleIdx uint8 // Vehicle index of the race winner
+	VehicleIdx uint8 // Vehicle index of the race winner
 }
 type Penalty struct {
-	penaltyType      uint8 // Penalty type – see Appendices
-	infringementType uint8 // Infringement type – see Appendices
-	vehicleIdx       uint8 // Vehicle index of the car the penalty is applied to
-	otherVehicleIdx  uint8 // Vehicle index of the other car involved
-	time             uint8 // Time gained, or time spent doing action in seconds
-	lapNum           uint8 // Lap the penalty occurred on
-	placesGained     uint8 // Number of places gained by this
+	PenaltyType      uint8 // Penalty type – see Appendices
+	InfringementType uint8 // Infringement type – see Appendices
+	VehicleIdx       uint8 // Vehicle index of the car the penalty is applied to
+	OtherVehicleIdx  uint8 // Vehicle index of the other car involved
+	Time             uint8 // Time gained, or time spent doing action in seconds
+	LapNum           uint8 // Lap the penalty occurred on
+	PlacesGained     uint8 // Number of places gained by this
 }
 type SpeedTrap struct {
-	vehicleIdx                 uint8   // Vehicle index of the vehicle triggering speed trap
-	speed                      float32 // Top speed achieved in kilometres per hour
-	isOverallFastestInSession  uint8   // Overall fastest speed in session = 1, otherwise 0
-	isDriverFastestInSession   uint8   // Fastest speed for driver in session = 1, otherwise 0
-	fastestVehicleIdxInSession uint8   // Vehicle index of the vehicle that is the fastest in this session
-	fastestSpeedInSession      float32 // Speed of the vehicle that is the fastest in this session
+	VehicleIdx                 uint8   // Vehicle index of the vehicle triggering speed trap
+	Speed                      float32 // Top speed achieved in kilometres per hour
+	IsOverallFastestInSession  uint8   // Overall fastest speed in session = 1, otherwise 0
+	IsDriverFastestInSession   uint8   // Fastest speed for driver in session = 1, otherwise 0
+	FastestVehicleIdxInSession uint8   // Vehicle index of the vehicle that is the fastest in this session
+	FastestSpeedInSession      float32 // Speed of the vehicle that is the fastest in this session
 }
 type StartLights struct {
-	numLights uint8 // Number of lights showing
+	NumLights uint8 // Number of lights showing
 }
 type DriveThroughPenaltyServed struct {
-	vehicleIdx uint8 // Vehicle index of the vehicle serving drive through
+	VehicleIdx uint8 // Vehicle index of the vehicle serving drive through
 }
 type StopGoPenaltyServed struct {
-	vehicleIdx uint8 // Vehicle index of the vehicle serving stop go
+	VehicleIdx uint8 // Vehicle index of the vehicle serving stop go
 }
 type Flashback struct {
-	flashbackFrameIdentifier uint32  // Frame identifier flashed back to
-	flashbackSessionTime     float32 // Session time flashed back to
+	FlashbackFrameIdentifier uint32  // Frame identifier flashed back to
+	FlashbackSessionTime     float32 // Session time flashed back to
 }
 type Buttons struct {
-	buttonStatus uint32 // Bit flags specifying which buttons are being pressed currently - see appendices
+	ButtonStatus uint32 // Bit flags specifying which buttons are being pressed currently - see appendices
 }
 type Overtake struct {
-	overtakingVehicleIdx     uint8 // Vehicle index of the vehicle overtaking
-	beingOvertakenVehicleIdx uint8 // Vehicle index of the vehicle being overtaken
+	OvertakingVehicleIdx     uint8 // Vehicle index of the vehicle overtaking
+	BeingOvertakenVehicleIdx uint8 // Vehicle index of the vehicle being overtaken
 }
 
 /* Participant Packet

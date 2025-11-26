@@ -82,7 +82,11 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 		return
 	}
 
-	sendMessageToKafka(kafkaProducer, topicName, string(jsonData), kafkaTimeout)
+	err = sendMessageToKafka(kafkaProducer, topicName, string(jsonData), kafkaTimeout)
+	if err != nil {
+		log.Println(clientAddress, "- Error sending message to Kafka:", err)
+		return
+	}
 }
 
 func parsePacketData(messageNoHeader []byte, packet any) error {
@@ -98,7 +102,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() {
+		err = conn.Close()
+	}()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -110,7 +116,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	if err != nil {
 		return err
 	}
-	defer controllerConn.Close()
+	defer func() {
+		err = controllerConn.Close()
+	}()
 
 	topicConfigs := make([]kafka.TopicConfig, len(topics))
 	for i, topic := range topics {
@@ -121,7 +129,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 		}
 	}
 
-	return controllerConn.CreateTopics(topicConfigs...)
+	err = controllerConn.CreateTopics(topicConfigs...)
+
+	return err
 }
 
 func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage string, timeout time.Duration) error {
@@ -172,6 +182,7 @@ func main() {
 	err := createKafkaTopics(kafka_address, kafka_port, packets.MESSAGE_TOPICS[:])
 	if err != nil {
 		log.Fatalln("Error creating Kafka topics:", err)
+		return
 	}
 	log.Println("Kafka topics created successfully:", packets.MESSAGE_TOPICS)
 
@@ -180,19 +191,31 @@ func main() {
 		Addr:     kafka.TCP(kafka_address + ":" + kafka_port),
 		Balancer: &kafka.LeastBytes{},
 	}
-	defer producer.Close()
+	defer func() {
+		err = producer.Close()
+		if err != nil {
+			log.Println("Error closing Kafka producer:", err)
+		}
+	}()
 
 	// Setup UDP server
 	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+srv_port)
 	if err != nil {
 		log.Fatalln(err)
+		return
 	}
 
 	con, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatalln(err)
+		return
 	}
-	defer con.Close()
+	defer func() {
+		err = con.Close()
+		if err != nil {
+			log.Println("Error closing UDP connection:", err)
+		}
+	}()
 
 	log.Println("UDP server listening on", ADDR+":"+srv_port)
 
