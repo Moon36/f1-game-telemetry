@@ -10,14 +10,15 @@ on:
       - main
       - development
 
+permissions:
+      contents: read
+
 jobs:
   lint-backend:
     runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version: ["3.10"]
-    permissions:
-      contents: read
     steps:
     - uses: actions/checkout@v4
     - name: Set up Python ${{ matrix.python-version }}
@@ -34,8 +35,6 @@ jobs:
         pylint --rcfile=${{ github.workspace }}/.github/workflows/.pylintrc $(git ls-files 'src/backend/*.py')
   lint-frontend:
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v5
@@ -50,4 +49,15 @@ jobs:
         run: |
           npm install
           npm run lint
-
+  lint-golang:
+    name: Lint Golang code
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-go@v6
+        with:
+          go-version: stable
+      - name: golangci-lint
+        uses: golangci/golangci-lint-action@v9
+        with:
+          version: v2.6

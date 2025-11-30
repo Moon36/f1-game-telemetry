@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
+	"fmt"
 	"log"
 	"net"
 	"os"
@@ -15,6 +16,33 @@ import (
 
 	"github.com/segmentio/kafka-go"
 )
+
+func processPacket23(packetID uint8, messageNoHeader []byte) (any, string, error) {
+	createPacket, prst := packets.PACKET_MAP_23[packetID]
+	if !prst {
+		return nil, "", fmt.Errorf("unknown packet ID: %d", packetID)
+	}
+
+	var packetData any
+	var err error
+	var topicName string
+
+	if packetID == packets.EVENT_DATA_ID {
+		if len(messageNoHeader) < 4 {
+			return nil, "", fmt.Errorf("supposed event data packet ('23) does not contain event code")
+		}
+		eventCode := string(messageNoHeader[:4])
+		createPacket, prst = packets.EVENT_MAP_23[eventCode]
+		if !prst {
+			return nil, "", fmt.Errorf("unknown event code: %s", eventCode)
+		}
+	}
+	packetData = createPacket()
+	topicName = packets.PACKET_TOPIC_MAP_23[packetID]
+
+	err = parsePacketData(messageNoHeader, packetData)
+	return packetData, topicName, err
+}
 
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
 	kafkaTimeout time.Duration) {
@@ -29,98 +57,16 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 	headerSize := binary.Size(header)
 	messageNoHeader := message[headerSize:]
 
-	_, prst := packets.PACKET_MAP[header.M_packetId]
-	if !prst {
-		log.Println(clientAddress, "- Unknown packet ID:", header.M_packetId)
-		return
-	}
-
 	// Generic packet variable and topic name
-	var packet any = packets.PACKET_MAP[header.M_packetId]
-	var topicName string = packets.PACKET_TOPIC_MAP[header.M_packetId]
-
 	var packetData any
+	var topicName string
 
-	switch packet.(type) {
-	case packets.PacketMotionData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketMotionData{})
-	case packets.PacketSessionData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketSessionData{})
-	case packets.PacketLapData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketLapData{})
-	case packets.GenericEvent:
-		eventCode := string(messageNoHeader[:4])
-		_, prst = packets.EVENT_MAP[eventCode]
-		if !prst {
-			log.Println(clientAddress, "- Unknown event code:", eventCode)
-			return
-		}
-		packet = packets.EVENT_MAP[eventCode]
-
-		switch packet.(type) {
-		case packets.PacketEventSSTA:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSSTA{})
-		case packets.PacketEventSEND:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSEND{})
-		case packets.PacketEventFTLP:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventFTLP{})
-		case packets.PacketEventRTMT:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRTMT{})
-		case packets.PacketEventDRSE:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDRSE{})
-		case packets.PacketEventDRSD:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDRSD{})
-		case packets.PacketEventTMPT:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventTMPT{})
-		case packets.PacketEventCHQF:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventCHQF{})
-		case packets.PacketEventRCWN:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRCWN{})
-		case packets.PacketEventPENA:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventPENA{})
-		case packets.PacketEventSPTP:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSPTP{})
-		case packets.PacketEventSTLG:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSTLG{})
-		case packets.PacketEventDTSV:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventDTSV{})
-		case packets.PacketEventSGSV:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventSGSV{})
-		case packets.PacketEventFLBK:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventFLBK{})
-		case packets.PacketEventBUTN:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventBUTN{})
-		case packets.PacketEventRDFL:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventRDFL{})
-		case packets.PacketEventOVTK:
-			packetData, err = parsePacketData(messageNoHeader, &packets.PacketEventOVTK{})
-		default:
-			log.Println(clientAddress, "- Unknown event code:", eventCode)
-			return
-		}
-		topicName = packets.TOPIC_EVENT_DATA
-	case packets.PacketParticipantsData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketParticipantsData{})
-	case packets.PacketCarSetupData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarSetupData{})
-	case packets.PacketCarTelemetryData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarTelemetryData{})
-	case packets.PacketCarStatusData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarStatusData{})
-	case packets.PacketFinalClassificationData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketFinalClassificationData{})
-	case packets.PacketLobbyInfoData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketLobbyInfoData{})
-	case packets.PacketCarDamageData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketCarDamageData{})
-	case packets.PacketSessionHistoryData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketSessionHistoryData{})
-	case packets.PacketTyreSetsData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketTyreSetsData{})
-	case packets.PacketMotionExData:
-		packetData, err = parsePacketData(messageNoHeader, &packets.PacketMotionExData{})
+	switch header.M_packetFormat {
+	case packets.PACKET_FORMAT_ID_23:
+		packetData, topicName, err = processPacket23(header.M_packetId, messageNoHeader)
 	default:
-		log.Println(clientAddress, "- Unknown packet type:", packet)
+		log.Println(clientAddress, "- Unknown packet format ID:", header.M_packetFormat,
+			"(This format might not be supported yet)")
 		return
 	}
 
@@ -136,15 +82,19 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 		return
 	}
 
-	sendMessageToKafka(kafkaProducer, topicName, string(jsonData), kafkaTimeout)
+	err = sendMessageToKafka(kafkaProducer, topicName, string(jsonData), kafkaTimeout)
+	if err != nil {
+		log.Println(clientAddress, "- Error sending message to Kafka:", err)
+		return
+	}
 }
 
-func parsePacketData(messageNoHeader []byte, packet any) (any, error) {
+func parsePacketData(messageNoHeader []byte, packet any) error {
 	err := binary.Read(bytes.NewReader(messageNoHeader), binary.LittleEndian, packet)
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return packet, nil
+	return nil
 }
 
 func createKafkaTopics(address string, port string, topics []string) error {
@@ -152,7 +102,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	if err != nil {
 		return err
 	}
-	defer conn.Close()
+	defer func() {
+		err = conn.Close()
+	}()
 
 	controller, err := conn.Controller()
 	if err != nil {
@@ -164,7 +116,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	if err != nil {
 		return err
 	}
-	defer controllerConn.Close()
+	defer func() {
+		err = controllerConn.Close()
+	}()
 
 	topicConfigs := make([]kafka.TopicConfig, len(topics))
 	for i, topic := range topics {
@@ -175,7 +129,9 @@ func createKafkaTopics(address string, port string, topics []string) error {
 		}
 	}
 
-	return controllerConn.CreateTopics(topicConfigs...)
+	err = controllerConn.CreateTopics(topicConfigs...)
+
+	return err
 }
 
 func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage string, timeout time.Duration) error {
@@ -226,6 +182,7 @@ func main() {
 	err := createKafkaTopics(kafka_address, kafka_port, packets.MESSAGE_TOPICS[:])
 	if err != nil {
 		log.Fatalln("Error creating Kafka topics:", err)
+		return
 	}
 	log.Println("Kafka topics created successfully:", packets.MESSAGE_TOPICS)
 
@@ -234,19 +191,31 @@ func main() {
 		Addr:     kafka.TCP(kafka_address + ":" + kafka_port),
 		Balancer: &kafka.LeastBytes{},
 	}
-	defer producer.Close()
+	defer func() {
+		err = producer.Close()
+		if err != nil {
+			log.Println("Error closing Kafka producer:", err)
+		}
+	}()
 
 	// Setup UDP server
 	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+srv_port)
 	if err != nil {
 		log.Fatalln(err)
+		return
 	}
 
 	con, err := net.ListenUDP("udp", addr)
 	if err != nil {
 		log.Fatalln(err)
+		return
 	}
-	defer con.Close()
+	defer func() {
+		err = con.Close()
+		if err != nil {
+			log.Println("Error closing UDP connection:", err)
+		}
+	}()
 
 	log.Println("UDP server listening on", ADDR+":"+srv_port)
 
