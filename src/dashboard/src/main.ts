@@ -27,8 +27,8 @@ let radioChimeStartBuffer: AudioBuffer;
 let radioChimeEndBuffer: AudioBuffer;
 
 const startChimePromise = loadAudioBuffer(audioContext, radioChimeStart);
-    const endChimePromise = loadAudioBuffer(audioContext, radioChimeEnd);
-    [radioChimeStartBuffer, radioChimeEndBuffer] = await Promise.all([startChimePromise, endChimePromise]);
+const endChimePromise = loadAudioBuffer(audioContext, radioChimeEnd);
+[radioChimeStartBuffer, radioChimeEndBuffer] = await Promise.all([startChimePromise, endChimePromise]);
 
 
 // Create WebSocket connection
