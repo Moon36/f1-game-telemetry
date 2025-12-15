@@ -1,31 +1,37 @@
 """
 Backend module for processing telemetry data.
+
+TODO: Add race engineer conditional if RE should be started or not.
 """
 import asyncio
 import json
 from os import getenv
 from sys import exit as sys_exit
+from collections.abc import Sequence
 
 from kafka.errors import NoBrokersAvailable
 
 from utils import constants
 from utils.kafka_consumer import TelemetryConsumer
 from utils.ws_server import WebSocketServer
+from race_engineer.race_engineer import RaceEngineer
+from race_engineer.text_generation.config import llm_sys_prompts
+from messages.audio_frontend_message import AudioChunkMessage
 
 
-def __message_consumer_blocking_loop__(
+def __message_consumer_forward_task__(
     consumer_obj: TelemetryConsumer,
     kafka_topic_pattern: str,
-    ws_server: WebSocketServer,
-    loop: asyncio.AbstractEventLoop
-):
+    loop: asyncio.AbstractEventLoop,
+    ws_server: WebSocketServer):
     """
-    This method is a blocking method that consumes messages from Kafka. The messages are then
-    broadcasted to all connected WebSocket clients using the provided WebSocketServer instance.
+    This method is a blocking method that consumes messages from Kafka. The messages are then broadcasted to all
+    connected WebSocket clients using the provided WebSocketServer instance.
     
     :param consumer_obj: An instance of TelemetryConsumer to consume messages from Kafka.
-    :param ws_server: An instance of WebSocketServer to broadcast messages to WebSocket clients.
+    :param kafka_topic_pattern: The Kafka topic pattern to subscribe to.
     :param loop: The main event loop to schedule the async broadcast tasks.
+    :param ws_server: An instance of WebSocketServer to broadcast messages to clients.
     """
     try:
         consumer_obj.subscribe_to_pattern(kafka_topic_pattern)
@@ -34,33 +40,66 @@ def __message_consumer_blocking_loop__(
 
         for record in msg_consumer:
             print(f"Received message on topic {record.topic}")
-            # Schedule the async broadcast_message coroutine to be run on the main event loop
-            loop.call_soon_threadsafe(
-                lambda record=record: asyncio.create_task(ws_server.broadcast_message(json.dumps({
-                'topic': record.topic,
-                'data': record.value
-            })))
-            )
+            payload = json.dumps({'topic': record.topic, 'data': record.value})
+            loop.call_soon_threadsafe(lambda p=payload: loop.create_task(ws_server.broadcast_message(p)))
     finally:
         consumer_obj.close()
 
 
-async def kafka_consumer_task(consumer_obj: TelemetryConsumer, kafka_topic_pattern: str, ws_server: WebSocketServer):
+def __message_consumer_re_task__(
+    consumer_obj: TelemetryConsumer,
+    kafka_topic_list: Sequence[str],
+    loop: asyncio.AbstractEventLoop,
+    ws_server: WebSocketServer,
+    race_engineer: RaceEngineer):
     """
-    Runs the Kafka consumer in a separate thread.
+    This method is a blocking method that consumes messages from Kafka. The messages are then processed by the AI
+    race engineer and broadcasted to all connected WebSocket clients using the provided WebSocketServer instance.
     
     :param consumer_obj: An instance of TelemetryConsumer to consume messages from Kafka.
-    :param ws_server: An instance of WebSocketServer to broadcast messages to WebSocket clients
+    :param kafka_topic_pattern: The Kafka topic pattern to subscribe to.
+    :param loop: The main event loop to schedule the async broadcast tasks.
+    :param ws_server: An instance of WebSocketServer to broadcast messages to clients.
     """
-    loop = asyncio.get_event_loop()
-    await loop.run_in_executor(
-        None,  # Use the default thread pool executor
-        __message_consumer_blocking_loop__,
-        consumer_obj,
-        kafka_topic_pattern,
-        ws_server,
-        loop
-    )
+    #async with ws_server:
+    #    try:
+    #        consumer_obj.subscribe_to_topics(kafka_topic_list)
+    #        msg_consumer = consumer_obj.get_consumer()
+    #        print(f'RE Consumer subscribed to topics matching pattern: {kafka_topic_list}')
+#
+    #        for record in msg_consumer:
+    #            print(f"Race Engineer task received message on topic {record.topic}")
+    #            # TODO: Translate record to message
+    #            message = 'None'
+    #            
+    #            # Run heavy LLM and TTS processing in a separate thread
+    #            tts_res = await asyncio.to_thread(
+    #                race_engineer.generate_radio_message,
+    #                message
+    #            )
+#
+    #            audio_message = AudioChunkMessage(tts_res)
+    #            loop.call_soon_threadsafe(
+    #                lambda p=audio_message.to_json(): loop.create_task(ws_server.broadcast_message(p))
+    #            )
+    #    finally:
+    #        consumer_obj.close()
+
+    # DELME: Temporary loop to simulate RE messages for testing
+    from time import sleep
+    while True:
+        sleep(10)
+
+        message = 'G\'day Sir!'
+        print('Sending message', f'\"{message}\"', 'to Race Engineer')
+        tts_res = race_engineer.generate_radio_message(message)
+        if any(tts_res):
+            audio_message = AudioChunkMessage(tts_res)
+            loop.call_soon_threadsafe(
+                lambda p=audio_message: loop.create_task(ws_server.broadcast_message(p.to_json()))
+            )
+        else:
+            print('No TTS response from Race Engineer')
 
 
 async def main():
@@ -68,24 +107,57 @@ async def main():
     args = {
         'kafka_address': getenv('KAFKA_ADDRESS', constants.KAFKA_DEFAULT_ADDRESS),
         'kafka_port': getenv('KAFKA_PORT', constants.KAFKA_DEFAULT_PORT),
-        'ws_port': getenv('BACKEND_PORT', constants.BACKEND_DEFAULT_PORT)
+        'ws_port': getenv('BACKEND_PORT', constants.BACKEND_DEFAULT_PORT),
+        're_ws_port': getenv('RE_BACKEND_PORT', constants.RACE_ENGINEER_DEFAULT_PORT),
+        'llm_base_url': getenv('LLM_BASE_URL', constants.LLM_DEFAULT_BASE_URL),
+        'llm_model': getenv('LLM_MODEL', constants.LLM_DEFAULT_MODEL),
+        'race_engineer_voice': getenv('RACE_ENGINEER_VOICE', constants.RACE_ENGINEER_DEFAULT_VOICE)
     }
 
     print('Starting consumer on', args['kafka_address'], args['kafka_port'])
 
     try:
         consumer_obj = TelemetryConsumer(args['kafka_address'], args['kafka_port'])
+        re_consumer_obj = TelemetryConsumer(args['kafka_address'], args['kafka_port'])
     except NoBrokersAvailable:
         print("No Kafka brokers available!")
         sys_exit(1)
 
     print(f'Starting WebSocket server on ws://0.0.0.0:{args["ws_port"]}')
     ws_server = WebSocketServer(host='0.0.0.0', port=int(args['ws_port']))
+    ws_server_task = asyncio.create_task(ws_server.start())
+    print(f'Starting WebSocket server for AI Race Engineer on ws://0.0.0.0:{args["re_ws_port"]}')
+    re_ws_server = WebSocketServer(host='0.0.0.0', port=int(args['re_ws_port']))
+    re_ws_server_task = asyncio.create_task(re_ws_server.start())
 
-    async with ws_server:
-        print("WebSocket server started")
-        consumer_task = asyncio.create_task(kafka_consumer_task(consumer_obj, constants.KAFKA_TOPIC_PATTERN, ws_server))
-        await consumer_task
+    race_engineer = RaceEngineer(args['llm_model'],
+                                 args['llm_base_url'],
+                                 constants.RACE_ENGINEER_DEFAULT_VOICE,
+                                 llm_sys_prompts.LLM_SYS_PROMPT,
+                                 llm_sys_prompts.Personalities.ANGRY)
+
+    event_loop = asyncio.get_event_loop()
+
+    # Make consumer forward thread
+    consumer_forward_thread = asyncio.to_thread(__message_consumer_forward_task__,
+                                                consumer_obj,
+                                                constants.KAFKA_TOPIC_PATTERN,
+                                                event_loop,
+                                                ws_server)
+
+    race_engineer_thread = asyncio.to_thread(__message_consumer_re_task__,
+                                             re_consumer_obj,
+                                             ['telemetry.event'],   # FIXME: Properly define RE topics
+                                             event_loop,
+                                             re_ws_server,
+                                             race_engineer)
+
+    await asyncio.gather(
+        ws_server_task,
+        re_ws_server_task,
+        consumer_forward_thread,
+        race_engineer_thread
+    )
 
 
 if __name__ == "__main__":

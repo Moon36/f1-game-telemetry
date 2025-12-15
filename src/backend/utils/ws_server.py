@@ -4,7 +4,6 @@ A WebSocket server for real-time communication.
 import json
 
 import websockets
-from websockets import Server
 
 
 def __is_valid_json__(message: str) -> bool:
@@ -30,20 +29,13 @@ class WebSocketServer:
         self.server = None
 
 
-    async def __aenter__(self) -> Server:
+    async def start(self):
         """Start the WebSocket server."""
         self.server = await websockets.serve(self.client_connect, self.host, self.port)
-        return self.server
 
 
-    async def __aexit__(self, exc_type, exc_val, exc_tb):
-        """
-        Stop the WebSocket server.
-        
-        :param exc_type: Exception type.
-        :param exc_val: Exception value.
-        :param exc_tb: Exception traceback.
-        """
+    async def close(self):
+        """Stop the WebSocket server."""
         for client in self.clients:
             client.close()
         self.clients.clear()

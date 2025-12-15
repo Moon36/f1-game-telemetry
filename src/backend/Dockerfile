@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.11-slim
 
 WORKDIR /app
 
@@ -6,7 +6,6 @@ COPY requirements.txt .
 
 RUN pip install -r requirements.txt
 
-COPY backend.py .
-COPY utils/ utils/
+COPY . .
 
 CMD ["python", "-u", "backend.py"]
