@@ -16,7 +16,7 @@ def __is_valid_json__(message: str) -> bool:
     try:
         json.loads(message)
         return True
-    except ValueError:
+    except json.decoder.JSONDecodeError:
         return False
 
 
