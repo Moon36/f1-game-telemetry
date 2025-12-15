@@ -7,7 +7,7 @@ PORT=${DASHBOARD_PORT:-80}
 BACKEND_PORT=${BACKEND_PORT:-8282}
 
 # Inject configuration into the HTML
-CONFIG_SCRIPT="<script>window.APP_CONFIG = { BACKEND_PORT: '${BACKEND_PORT}' };</script>"
+CONFIG_SCRIPT="<script>window.APP_CONFIG = { BACKEND_PORT: '${BACKEND_PORT}', RE_BACKEND_PORT: '${RE_BACKEND_PORT}' };</script>"
 
 # Insert the script before the closing head tag in index.html
 sed -i "s|</head>|${CONFIG_SCRIPT}</head>|g" /usr/share/nginx/html/index.html
