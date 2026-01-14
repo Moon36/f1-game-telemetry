@@ -5,20 +5,28 @@
     >
       <span
         class="w-3 h-3 rounded-full mr-3 relative group"
-        :class="store.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
+        :class="store.isWsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
         style="box-shadow: 0 0 8px 2px currentColor;"
         aria-label="Connection status"
       >
         <span
           class="absolute left-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-900 text-gray-100 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
         >
-          {{ store.wsConnected ? 'Backend Connected' : 'Backend not Connected' }}
+          {{ store.isWsConnected ? 'Backend Connected' : 'Backend not Connected' }}
         </span>
       </span>
       <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0">
         <img src="/assets/icons/Dashboard_Icon.svg" alt="Dashboard Icon" class="w-7 h-7 mr-3" />
         F1 Telemetry Dashboard
       </h1>
+      <button
+        @click="switchAudio"
+        class="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+        aria-label="Activate audio"
+        :title="(store.isAudioEnabled ? 'Deactivate' : 'Activate') + ' Race Engineer Audio'"
+      >
+        <img :src="store.isAudioEnabled ? volumeUpIcon : volumeMuteIcon" alt="Volume" class="w-5 h-5" />
+      </button>
 
       <!-- Header to toggle widgets -->
       <div class="flex flex-wrap gap-2">
@@ -26,8 +34,7 @@
           v-for="widget in widgets"
           :key="widget.id"
           @click="toggleWidget(widget.id)"
-          :class="`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 
-            ${widget.visible ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`"
+          :class="`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200 ${widget.visible ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`"
         >
           <span v-html="widget.icon" class="mr-2 lucide"></span>
           <span>{{ widget.name }}</span>
@@ -52,8 +59,11 @@
 
   <script setup lang="ts">
   import { ref, markRaw } from 'vue'
-  import TyreInfo from './components/charts/TyreTempsWidget.vue'
-  import { store } from './store'
+  import TyreInfo from '@/components/charts/TyreTempsWidget.vue'
+  import { store } from '@/store'
+  import { audioPlayer } from '@/services/AudioPlayer';
+  import volumeUpIcon from '@assets/icons/volume-up.svg'
+  import volumeMuteIcon from '@assets/icons/volume-mute.svg'
 
   const widgets = ref([
     {
@@ -79,5 +89,12 @@ function getWidgetData(widgetId: string) {
   }
   
   return {}
+}
+
+async function switchAudio() {
+  if (!store.isAudioEnabled) {
+    await audioPlayer.initialize();
+  }
+  store.isAudioEnabled = !store.isAudioEnabled;
 }
 </script>
