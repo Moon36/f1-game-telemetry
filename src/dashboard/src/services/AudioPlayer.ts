@@ -90,6 +90,26 @@ class AudioPlayer {
         }
     }
 
+    public async playRadioStartChime(): Promise<void> {
+        /**
+         * Plays the radio start chime.
+         */
+        if (!this.audioContext) {
+            console.warn('AudioContext is not initialized. Call initialize() first.');
+            return;
+        }
+        if (!this.radioChimeStartBuffer) {
+            console.warn('Radio chime start buffer is not loaded.');
+            return;
+        }
+
+        this.queue.push(this.radioChimeStartBuffer);
+        
+        if (!this.isPlaying) {
+            this.processAudioQueue();
+        }
+    }
+
     private async processAudioQueue(): Promise<void> {
         /**
          * Processes the audio queue and plays AudioBuffers sequentially.

@@ -94,6 +94,7 @@ function getWidgetData(widgetId: string) {
 async function switchAudio() {
   if (!store.isAudioEnabled) {
     await audioPlayer.initialize();
+    await audioPlayer.playRadioStartChime();
   }
   store.isAudioEnabled = !store.isAudioEnabled;
 }
