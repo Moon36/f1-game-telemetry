@@ -5,7 +5,7 @@ from collections.abc import Sequence
 import json
 from kafka import KafkaConsumer
 
-from utils.constants import KAFKA_DEFAULT_ADDRESS, KAFKA_DEFAULT_PORT
+from utils.constants import KAFKA_DEFAULT_ADDRESS, KAFKA_DEFAULT_PORT, KAFKA_DEFAULT_GROUP_ID
 
 
 class TelemetryConsumer:
@@ -14,13 +14,17 @@ class TelemetryConsumer:
 
     :param address: Kafka broker address.
     :param port: Kafka broker port.
+    :param group_id: Kafka consumer group ID.
     """
-    def __init__(self, address=KAFKA_DEFAULT_ADDRESS, port=KAFKA_DEFAULT_PORT):
+    def __init__(self,
+                 address: str=KAFKA_DEFAULT_ADDRESS,
+                 port: str | int=KAFKA_DEFAULT_PORT,
+                 group_id: str=KAFKA_DEFAULT_GROUP_ID):
         self.consumer = KafkaConsumer(
             bootstrap_servers=f"{address}:{port}",
             auto_offset_reset='earliest',
             enable_auto_commit=True,
-            group_id='python-reader',
+            group_id=group_id,
             value_deserializer=lambda x: json.loads(x.decode('utf-8')),
             allow_auto_create_topics=False,
         )
