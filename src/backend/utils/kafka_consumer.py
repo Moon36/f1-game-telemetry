@@ -47,7 +47,7 @@ class TelemetryConsumer:
         :param topics: Sequence of topics to subscribe to.
         :raises ValueError: If topics sequence is empty.
         """
-        if not topics:
+        if not any(topics):
             raise ValueError("Topics must not be empty.")
         self.consumer.subscribe(topics=topics)
 
