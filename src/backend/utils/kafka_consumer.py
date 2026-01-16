@@ -37,7 +37,7 @@ class TelemetryConsumer:
         :raises ValueError: If pattern is empty.
         """
         if not pattern:
-            raise ValueError("Pattern must not be empty.")
+            raise ValueError('Pattern must not be empty.')
         self.consumer.subscribe(pattern=pattern)
 
     def subscribe_to_topics(self, topics: Sequence[str]):
@@ -48,7 +48,7 @@ class TelemetryConsumer:
         :raises ValueError: If topics sequence is empty.
         """
         if not any(topics):
-            raise ValueError("Topics must not be empty.")
+            raise ValueError('Topics must not be empty.')
         self.consumer.subscribe(topics=topics)
 
     def get_consumer(self) -> KafkaConsumer:
