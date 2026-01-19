@@ -11,6 +11,7 @@ class AudioPlayer {
     private isPlaying: boolean = false;
     private radioChimeStartBuffer: AudioBuffer | null = null;
     private radioChimeEndBuffer: AudioBuffer | null = null;
+    private currentSource: AudioBufferSourceNode | null = null;
 
     public isAudioReady = ref(false);
 
@@ -90,6 +91,18 @@ class AudioPlayer {
         }
     }
 
+    public async stopAudio(): Promise<void> {
+        /**
+         * Stops the currently playing audio and clears the queue.
+         */
+        if (this.currentSource) {
+            this.currentSource.stop(0);
+            this.currentSource = null;
+        }
+        this.queue = [];
+        this.isPlaying = false;
+    }
+
     public async playRadioStartChime(): Promise<void> {
         /**
          * Plays the radio start chime.
@@ -124,9 +137,13 @@ class AudioPlayer {
         let source = this.audioContext.createBufferSource();
         source.buffer = this.queue.shift()!;
         source.connect(this.audioContext.destination);
+        this.currentSource = source;
         source.start(0);
 
-        source.onended = () => { if (this.audioContext) this.processAudioQueue(); };
+        source.onended = () => {
+            this.currentSource = null;
+            if (this.audioContext) this.processAudioQueue();
+        };
     }
 
     private async loadAudioBuffer(audioContext: AudioContext, url: string): Promise<AudioBuffer> {

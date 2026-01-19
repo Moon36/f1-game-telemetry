@@ -95,6 +95,8 @@ async function switchAudio() {
   if (!store.isAudioEnabled) {
     await audioPlayer.initialize();
     await audioPlayer.playRadioStartChime();
+  } else {
+    await audioPlayer.stopAudio();
   }
   store.isAudioEnabled = !store.isAudioEnabled;
 }
