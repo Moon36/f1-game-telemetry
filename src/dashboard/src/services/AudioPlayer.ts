@@ -12,6 +12,7 @@ class AudioPlayer {
     private radioChimeStartBuffer: AudioBuffer | null = null;
     private radioChimeEndBuffer: AudioBuffer | null = null;
     private currentSource: AudioBufferSourceNode | null = null;
+    private chimeBuffersLoadedPromise: Promise<void> | null = null;
 
     public isAudioReady = ref(false);
 
@@ -43,12 +44,12 @@ class AudioPlayer {
             return;
         }
 
-        if (!this.radioChimeStartBuffer) {
-            this.radioChimeStartBuffer = await this.loadAudioBuffer(this.audioContext, radioChimeStart);
-        }
-        if (!this.radioChimeEndBuffer) {
-            this.radioChimeEndBuffer = await this.loadAudioBuffer(this.audioContext, radioChimeEnd);
-        }
+        if (!this.chimeBuffersLoadedPromise) {
+            this.chimeBuffersLoadedPromise = (async () => {
+                const startChimePromise = this.loadAudioBuffer(this.audioContext!, radioChimeStart);
+                const endChimePromise = this.loadAudioBuffer(this.audioContext!, radioChimeEnd);
+                [this.radioChimeStartBuffer, this.radioChimeEndBuffer] = await Promise.all([startChimePromise, endChimePromise]);
+            })();
     }
 
     public async playAudio(audioData: AudioChunkMessage, playChimes: boolean = true): Promise<void> {
