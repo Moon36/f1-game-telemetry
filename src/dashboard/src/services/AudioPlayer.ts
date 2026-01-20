@@ -50,6 +50,7 @@ class AudioPlayer {
                 const endChimePromise = this.loadAudioBuffer(this.audioContext!, radioChimeEnd);
                 [this.radioChimeStartBuffer, this.radioChimeEndBuffer] = await Promise.all([startChimePromise, endChimePromise]);
             })();
+        }
     }
 
     public async playAudio(audioData: AudioChunkMessage, playChimes: boolean = true): Promise<void> {
