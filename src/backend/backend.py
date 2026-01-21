@@ -11,13 +11,16 @@ from collections.abc import Sequence
 
 from kafka.errors import NoBrokersAvailable
 
+from database.database import SimpleMemoryDatabase
+from messages.participants_packet import ParticipantsPacket
+from race_engineer.race_engineer import RaceEngineer
+from race_engineer.text_generation.config import llm_sys_prompts
+from race_engineer.message_scheduler import LLMMessageScheduler
 from utils import constants
 from utils.kafka_consumer import TelemetryConsumer
 from utils.ws_server import WebSocketServer
 from utils.message_translator import MessageTranslator
-from race_engineer.race_engineer import RaceEngineer
-from race_engineer.text_generation.config import llm_sys_prompts
-from race_engineer.message_scheduler import LLMMessageScheduler
+from utils.packet_translator import PacketTranslator
 
 
 def __message_consumer_forward_task__(
