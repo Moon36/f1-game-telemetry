@@ -14,9 +14,10 @@ from kafka.errors import NoBrokersAvailable
 from utils import constants
 from utils.kafka_consumer import TelemetryConsumer
 from utils.ws_server import WebSocketServer
+from utils.message_translator import MessageTranslator
 from race_engineer.race_engineer import RaceEngineer
 from race_engineer.text_generation.config import llm_sys_prompts
-from messages.audio_frontend_message import AudioChunkMessage
+from race_engineer.message_scheduler import LLMMessageScheduler
 
 
 def __message_consumer_forward_task__(
@@ -39,7 +40,6 @@ def __message_consumer_forward_task__(
         print(f'Consumer subscribed to topics matching pattern: {kafka_topic_pattern}')
 
         for record in msg_consumer:
-            print(f"Received message on topic {record.topic}")
             payload = json.dumps({'topic': record.topic, 'data': record.value})
             loop.call_soon_threadsafe(lambda p=payload: loop.create_task(ws_server.broadcast_message(p)))
     finally:
@@ -49,9 +49,7 @@ def __message_consumer_forward_task__(
 def __message_consumer_re_task__(
     consumer_obj: TelemetryConsumer,
     kafka_topic_list: Sequence[str],
-    loop: asyncio.AbstractEventLoop,
-    ws_server: WebSocketServer,
-    race_engineer: RaceEngineer):
+    scheduler: LLMMessageScheduler):
     """
     This method is a blocking method that consumes messages from Kafka. The messages are then processed by the AI
     race engineer and broadcasted to all connected WebSocket clients using the provided WebSocketServer instance.
@@ -61,45 +59,60 @@ def __message_consumer_re_task__(
     :param loop: The main event loop to schedule the async broadcast tasks.
     :param ws_server: An instance of WebSocketServer to broadcast messages to clients.
     """
-    #async with ws_server:
-    #    try:
-    #        consumer_obj.subscribe_to_topics(kafka_topic_list)
-    #        msg_consumer = consumer_obj.get_consumer()
-    #        print(f'RE Consumer subscribed to topics matching pattern: {kafka_topic_list}')
-#
-    #        for record in msg_consumer:
-    #            print(f"Race Engineer task received message on topic {record.topic}")
-    #            # TODO: Translate record to message
-    #            message = 'None'
-    #            
-    #            # Run heavy LLM and TTS processing in a separate thread
-    #            tts_res = await asyncio.to_thread(
-    #                race_engineer.generate_radio_message,
-    #                message
-    #            )
-#
-    #            audio_message = AudioChunkMessage(tts_res)
-    #            loop.call_soon_threadsafe(
-    #                lambda p=audio_message.to_json(): loop.create_task(ws_server.broadcast_message(p))
-    #            )
-    #    finally:
-    #        consumer_obj.close()
+    try:
+        consumer_obj.subscribe_to_topics(kafka_topic_list)
+        msg_consumer = consumer_obj.get_consumer()
+        print(f'RE Consumer subscribed to topics matching pattern: {kafka_topic_list}')
+
+        for record in msg_consumer:
+            #print("Race Engineer task received message on topic", record.topic, 'with value', record.value)
+            try:
+                message = MessageTranslator.translate(record.topic, **record.value)
+            except ValueError as e:
+                print('Message translation error:', e)
+                continue
+
+            if message.message_type == 'EVENT':
+                if 'event_code' in message.data:
+                    if message.data['event_code'] == 'FTLP'\
+                        or message.data['event_code'] == 'RTMT'\
+                        or message.data['event_code'] == 'DRSE'\
+                        or message.data['event_code'] == 'DRSD'\
+                        or message.data['event_code'] == 'TMPT'\
+                        or message.data['event_code'] == 'RCWN'\
+                        or message.data['event_code'] == 'PENA'\
+                        or message.data['event_code'] == 'LGOT':
+                        #or message.data['event_code'] == 'OVTK':
+                        print('RELEVANT event_code:', message.data['event_code'])
+
+                        # Run heavy LLM and TTS processing in a separate thread
+                        scheduler.schedule_message(message.priority, message)
+    except Exception as e:
+        print('Some error occurred in RE consumer task:', e)
+    finally:
+        consumer_obj.close()
+        scheduler.stop()
 
     # DELME: Temporary loop to simulate RE messages for testing
-    from time import sleep
-    while True:
-        sleep(10)
-
-        message = 'G\'day Sir!'
-        print('Sending message', f'\"{message}\"', 'to Race Engineer')
-        tts_res = race_engineer.generate_radio_message(message)
-        if any(tts_res):
-            audio_message = AudioChunkMessage(tts_res)
-            loop.call_soon_threadsafe(
-                lambda p=audio_message: loop.create_task(ws_server.broadcast_message(p.to_json()))
-            )
-        else:
-            print('No TTS response from Race Engineer')
+    #from time import sleep
+    #from messages.audio_frontend_message import AudioChunkMessage
+    #while True:
+    #    sleep(10)
+#
+    #    message = MessageTranslator.translate('telemetry.event',
+    #                                          **{
+    #                                              'M_eventStringCode': [66, 85, 84, 78],
+    #                                              'M_eventDetails': {'ButtonStatus': 16}
+    #                                            })
+    #    print('Sending message', f'\"{message}\"', 'to Race Engineer')
+    #    tts_res = race_engineer.generate_radio_message(message)
+    #    if any(tts_res):
+    #        audio_message = AudioChunkMessage(tts_res)
+    #        loop.call_soon_threadsafe(
+    #            lambda p=audio_message: loop.create_task(ws_server.broadcast_message(p.to_json()))
+    #        )
+    #    else:
+    #        print('No TTS response from Race Engineer')
 
 
 async def main():
@@ -118,7 +131,7 @@ async def main():
 
     try:
         consumer_obj = TelemetryConsumer(args['kafka_address'], args['kafka_port'])
-        re_consumer_obj = TelemetryConsumer(args['kafka_address'], args['kafka_port'])
+        re_consumer_obj = TelemetryConsumer(args['kafka_address'], args['kafka_port'], 'race-engineer-consumer-group')
     except NoBrokersAvailable:
         print("No Kafka brokers available!")
         sys_exit(1)
@@ -138,6 +151,9 @@ async def main():
 
     event_loop = asyncio.get_event_loop()
 
+    llm_msg_scheduler = LLMMessageScheduler(event_loop, re_ws_server, race_engineer, cooldown_time=5)
+    llm_msg_scheduler.start()
+
     # Make consumer forward thread
     consumer_forward_thread = asyncio.to_thread(__message_consumer_forward_task__,
                                                 consumer_obj,
@@ -147,10 +163,8 @@ async def main():
 
     race_engineer_thread = asyncio.to_thread(__message_consumer_re_task__,
                                              re_consumer_obj,
-                                             ['telemetry.event'],   # FIXME: Properly define RE topics
-                                             event_loop,
-                                             re_ws_server,
-                                             race_engineer)
+                                             ['telemetry.event'],
+                                             llm_msg_scheduler)
 
     await asyncio.gather(
         ws_server_task,
