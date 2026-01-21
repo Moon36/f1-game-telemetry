@@ -1,6 +1,7 @@
 """This file provides the race engineer class."""
 
 from collections.abc import Sequence
+from threading import Lock
 
 from piper.voice import AudioChunk
 from requests import HTTPError
@@ -8,10 +9,22 @@ from requests import HTTPError
 from race_engineer.text_generation.config.llm_sys_prompts import Personalities
 from race_engineer.text_generation.llm_handler import LLMHandler
 from race_engineer.text_to_speech.tts_handler import TTSHandler
-from messages.base_message import LLMBaseMessage
+from messages.llm_messages.base_message import LLMBaseMessage
 
 class RaceEngineer:
-    """The Race Engineer class combines LLM and TTS functionalities."""
+    """The Race Engineer singleton class combines LLM and TTS functionalities."""
+
+    _instance = None
+    _initialized = False
+    _lock = Lock()
+
+    def __new__(cls, *args, **kwargs):
+        if cls._instance is None:
+            with cls._lock:
+                cls._instance = super(RaceEngineer, cls).__new__(cls)
+                cls._instance._initialized = False
+        return cls._instance
+
 
     def __init__(self,
                  model: str,
@@ -19,6 +32,10 @@ class RaceEngineer:
                  voice_path: str,
                  system_instruction: str | None = None,
                  personality: Personalities = Personalities.NEUTRAL):
+        if self._initialized:
+            # TODO: log warning
+            return
+
         self.model = model
         self.base_url = base_url
         self.voice_path = voice_path
@@ -32,6 +49,9 @@ class RaceEngineer:
             personality=self.personality
         )
         self.tts_handler = TTSHandler(voice_path=self.voice_path)
+
+        self._initialized = True
+
 
     def generate_radio_message(self, message: LLMBaseMessage | str) -> Sequence[AudioChunk]:
         """
