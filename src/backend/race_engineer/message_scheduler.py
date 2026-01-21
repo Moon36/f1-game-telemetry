@@ -13,7 +13,7 @@ from typing import Any
 from utils.ws_server import WebSocketServer
 from race_engineer.race_engineer import RaceEngineer
 from messages.audio_frontend_message import AudioChunkMessage
-from messages.message_priorities import MessagePriority
+from messages.llm_messages.message_priorities import MessagePriority
 from messages.llm_messages.base_message import LLMBaseMessage
 
 

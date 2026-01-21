@@ -2,7 +2,7 @@
 from abc import ABC
 from dataclasses import dataclass
 
-from messages.message_priorities import MessagePriority
+from messages.llm_messages.message_priorities import MessagePriority
 
 @dataclass
 class LLMBaseMessage(ABC):

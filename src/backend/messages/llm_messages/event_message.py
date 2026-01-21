@@ -3,7 +3,7 @@
 from collections.abc import Sequence
 
 from messages.llm_messages.base_message import LLMBaseMessage
-from messages.message_priorities import MessagePriority
+from messages.llm_messages.message_priorities import MessagePriority
 
 PRIOROTY = MessagePriority.HIGH
 TYPE = "EVENT"
