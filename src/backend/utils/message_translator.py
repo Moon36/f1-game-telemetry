@@ -8,9 +8,10 @@ from database.database import SimpleMemoryDatabase
 class MessageTranslator:
     """Translates message topics into specific LLMBaseMessage instances."""
 
-    __message_registry__: Dict[str, Type[LLMBaseMessage]] = {
+    _message_registry: Dict[str, Type[LLMBaseMessage]] = {
         "telemetry.event": EventMessage,
     }
+    _database: SimpleMemoryDatabase = SimpleMemoryDatabase()
 
     @classmethod
     def translate(cls, topic: str, *args, **kwargs) -> LLMBaseMessage:
@@ -24,9 +25,9 @@ class MessageTranslator:
         :raises ValueError: If the topic is not registered.
         """
         topic_lower = topic.lower()
-        if topic_lower not in cls.__message_registry__:
+        if topic_lower not in cls._message_registry:
             raise ValueError(f"Unknown message topic: {topic}")
 
-        message_class = cls.__message_registry__[topic_lower]
+        message_class = cls._message_registry[topic_lower]
         # Beware of message header. Header is (probably) irrelevant for the LLM message.
         return message_class(*args, **kwargs)
