@@ -159,7 +159,7 @@ const EVENT_CODE_OVTK = "OVTK" // Overtake
  * Frequency: Rate as specified in the menus
  */
 type PacketMotionData struct {
-	//	m_header      PacketHeade
+	M_header      PacketHeader
 	CarMotionData [22]CarMotionData // Data for all cars
 }
 type CarMotionData struct {
@@ -189,6 +189,7 @@ type CarMotionData struct {
  * Frequency: 2 per second
  */
 type PacketSessionData struct {
+	M_header  PacketHeader
 	M_weather uint8 // Weather - 0 = clear, 1 = light cloud, 2 = overcast,
 	// 3 = light rain, 4 = heavy rain, 5 = storm
 	M_trackTemperature int8   // Track temp. in degrees celsius
@@ -267,6 +268,7 @@ type WeatherForecastSample struct {
  * Frequency: Rate as specified in the menus
  */
 type PacketLapData struct {
+	M_header               PacketHeader
 	M_lapData              [22]LapData // Lap data for all cars on track
 	M_timeTrialPBCarIdx    uint8       // Index of Personal Best car in time trial (255 if invalid)
 	M_timeTrialRivalCarIdx uint8       // Index of Rival car in time trial (255 if invalid)
@@ -313,114 +315,133 @@ type LapData struct {
  * Frequency: When the event occurs
  */
 type GenericEvent struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any
 }
 
 // Session started
 type PacketEventSSTA struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for SSTA
 }
 
 // Session ended
 type PacketEventSEND struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for SEND
 }
 
 // Fastest lap
 type PacketEventFTLP struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    FastestLap // Details of the fastest lap event
 }
 
 // Retirement
 type PacketEventRTMT struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    Retirement // Details of the retirement event
 }
 
 // DRS enabled
 type PacketEventDRSE struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for DRSE
 }
 
 // DRS disabled
 type PacketEventDRSD struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for DRSD
 }
 
 // Team mate in pits
 type PacketEventTMPT struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    TeamMateInPits // Details of the team mate in pits event
 }
 
 // Chequered flag
 type PacketEventCHQF struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for CHQF
 }
 
 // Race winner
 type PacketEventRCWN struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    RaceWinner // Details of the race winner event
 }
 
 // Penalty issued
 type PacketEventPENA struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    Penalty // Details of the penalty event
 }
 
 // Speed trap triggered
 type PacketEventSPTP struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    SpeedTrap // Details of the speed trap event
 }
 
 // Start lights
 type PacketEventSTLG struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    StartLights // Details of the start lights event
 }
 
 // Drive through penalty served
 type PacketEventDTSV struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    DriveThroughPenaltyServed // Details of the drive through penalty served event
 }
 
 // Stop go penalty served
 type PacketEventSGSV struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    StopGoPenaltyServed // Details of the stop go penalty served event
 }
 
 // Flashback
 type PacketEventFLBK struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    Flashback // Details of the flashback event
 }
 
 // Buttons
 type PacketEventBUTN struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    Buttons // Details of the buttons event
 }
 
 // Red Flag
 type PacketEventRDFL struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    any // No event details for RDFL
 }
 
 // Overtake
 type PacketEventOVTK struct {
+	M_header          PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    Overtake // Details of the overtake event
 }
@@ -487,6 +508,7 @@ type Overtake struct {
  * Frequency: Every 5 seconds
  */
 type PacketParticipantsData struct {
+	M_header        PacketHeader
 	M_numActiveCars uint8               // Number of active cars in the data
 	M_participants  [22]ParticipantData // Data for all participants
 }
@@ -513,6 +535,7 @@ type ParticipantData struct {
  * Frequency: 2 per second
  */
 type PacketCarSetupData struct {
+	M_header    PacketHeader
 	M_carSetups [22]CarSetupData
 }
 type CarSetupData struct {
@@ -546,6 +569,7 @@ type CarSetupData struct {
  * well and will mimic real life driver preferences.
  */
 type PacketCarTelemetryData struct {
+	M_header        PacketHeader
 	M_carTelemetry  [22]CarTelemetryData
 	M_mfdPanelIndex uint8 // Index of the MFD panel open, 255 if closed; Single player race:
 	// 0 = Car setup, 1 = Pits, 2 = Damage, 3 = Engine, 4 = Temperatures
@@ -577,6 +601,7 @@ type CarTelemetryData struct {
  * Frequency: Rate as specified in the menus
  */
 type PacketCarStatusData struct {
+	M_header        PacketHeader
 	M_carStatusData [22]CarStatusData // Car status data for all cars
 }
 type CarStatusData struct {
@@ -618,6 +643,7 @@ type CarStatusData struct {
  * Frequency: Once at the end of the race
  */
 type PacketFinalClassificationData struct {
+	M_header             PacketHeader
 	M_numCars            uint8                       // Number of cars in the final classification
 	M_classificationData [22]FinalClassificationData // Final classification data for all cars
 }
@@ -646,6 +672,7 @@ type FinalClassificationData struct {
  * Frequency: 2 per second when in a lobby
  */
 type PacketLobbyInfoData struct {
+	M_header       PacketHeader
 	M_numPlayers   uint8 // Number of players in the lobby
 	M_lobbyPlayers [22]LobbyPlayerData
 }
@@ -703,6 +730,7 @@ type CarDamageData struct {
  * Frequency: 20 per second but cycling through cars
  */
 type PacketSessionHistoryData struct {
+	M_header                PacketHeader
 	M_carIdx                uint8               // Index of the car this lap data relates to
 	M_numLaps               uint8               // Num laps in the data (including current partial lap)
 	M_numTyreStints         uint8               // Number of tyre stints in the data
@@ -737,6 +765,7 @@ type TyreStintHistoryData struct {
  * Frequency: 20 per second but cycling through cars
  */
 type PacketTyreSetsData struct {
+	M_header    PacketHeader
 	M_carIdx    uint8           // Index of the car this data relates to
 	M_tyreSets  [20]TyreSetData // 13 (dry) + 7 (wet)
 	M_fittedIdx uint8           // Index into array of fitted tyre
@@ -761,6 +790,7 @@ type TyreSetData struct {
  * Frequency: Rate as specified in the menus
  */
 type PacketMotionExData struct {
+	M_header PacketHeader
 	// Extra player car ONLY data
 	M_suspensionPosition     [4]float32 // Note: All wheel arrays have the following order:
 	M_suspensionVelocity     [4]float32 // RL, RR, FL, FR
