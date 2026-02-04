@@ -17,7 +17,7 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
-func processPacket23(packetID uint8, messageNoHeader []byte) (any, string, error) {
+func processPacket23(packetID uint8, message []byte) (any, string, error) {
 	createPacket, prst := packets.PACKET_MAP_23[packetID]
 	if !prst {
 		return nil, "", fmt.Errorf("unknown packet ID: %d", packetID)
@@ -28,10 +28,10 @@ func processPacket23(packetID uint8, messageNoHeader []byte) (any, string, error
 	var topicName string
 
 	if packetID == packets.EVENT_DATA_ID {
-		if len(messageNoHeader) < 4 {
+		if len(message) < 4 {
 			return nil, "", fmt.Errorf("supposed event data packet ('23) does not contain event code")
 		}
-		eventCode := string(messageNoHeader[:4])
+		eventCode := string(message[:4])
 		createPacket, prst = packets.EVENT_MAP_23[eventCode]
 		if !prst {
 			return nil, "", fmt.Errorf("unknown event code: %s", eventCode)
@@ -40,7 +40,7 @@ func processPacket23(packetID uint8, messageNoHeader []byte) (any, string, error
 	packetData = createPacket()
 	topicName = packets.PACKET_TOPIC_MAP_23[packetID]
 
-	err = parsePacketData(messageNoHeader, packetData)
+	err = parsePacketData(message, packetData)
 	return packetData, topicName, err
 }
 
@@ -54,16 +54,13 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 		return
 	}
 
-	headerSize := binary.Size(header)
-	messageNoHeader := message[headerSize:]
-
 	// Generic packet variable and topic name
 	var packetData any
 	var topicName string
 
 	switch header.M_packetFormat {
 	case packets.PACKET_FORMAT_ID_23:
-		packetData, topicName, err = processPacket23(header.M_packetId, messageNoHeader)
+		packetData, topicName, err = processPacket23(header.M_packetId, message)
 	default:
 		log.Println(clientAddress, "- Unknown packet format ID:", header.M_packetFormat,
 			"(This format might not be supported yet)")
@@ -89,8 +86,8 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 	}
 }
 
-func parsePacketData(messageNoHeader []byte, packet any) error {
-	err := binary.Read(bytes.NewReader(messageNoHeader), binary.LittleEndian, packet)
+func parsePacketData(message []byte, packet any) error {
+	err := binary.Read(bytes.NewReader(message), binary.LittleEndian, packet)
 	if err != nil {
 		return err
 	}
