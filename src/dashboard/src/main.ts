@@ -54,23 +54,25 @@ function handleWSMessage(event: MessageEvent) {
     return
   }
 
+  // Get player car index in array
+  const player_id = data['data']['M_header']['M_playerCarIndex']
+
   switch (data?.topic) {
     case 'telemetry.car_telemetry': {
+
       // Handle car telemetry data
-      const newInnerTemps = data['data']['M_carTelemetry'][0]['M_tyresInnerTemperature']
-      const newOuterTemps = data['data']['M_carTelemetry'][0]['M_tyresSurfaceTemperature']
+      const newInnerTemps = data['data']['M_carTelemetry'][player_id]['M_tyresInnerTemperature']
+      const newOuterTemps = data['data']['M_carTelemetry'][player_id]['M_tyresSurfaceTemperature']
 
       // Mutate array in place to keep reactivity
       if (Array.isArray(newInnerTemps) && newInnerTemps.length === 4) {
         store.innerTyreTemps.splice(0, 4, ...newInnerTemps)
-        console.log('Updated inner tyre temperatures:', store.innerTyreTemps)
       } else {
         console.warn('Invalid inner tyre temperature data:', newInnerTemps)
       }
 
       if (Array.isArray(newOuterTemps) && newOuterTemps.length === 4) {
         store.outerTyreTemps.splice(0, 4, ...newOuterTemps)
-        console.log('Updated outer tyre temperatures:', store.outerTyreTemps)
       } else {
         console.warn('Invalid outer tyre temperature data:', newOuterTemps)
       }
@@ -78,7 +80,7 @@ function handleWSMessage(event: MessageEvent) {
     }
     case 'telemetry.car_status': {
       // Handle car status data
-      const compoundId = data['data']['M_carStatusData'][0]['M_actualTyreCompound']
+      const compoundId = data['data']['M_carStatusData'][player_id]['M_actualTyreCompound']
       if (typeof compoundId === 'number') {
         store.actualTyreCompoundId = compoundId
       } else {
