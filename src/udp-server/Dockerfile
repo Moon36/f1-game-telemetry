@@ -3,7 +3,7 @@ WORKDIR /app
 COPY go.mod go.sum ./
 RUN go mod download
 COPY src/udp-server/*.go ./src/udp-server/
-COPY src/udp-server/packets/*.go ./src/udp-server/packets/
+COPY src/internal/ ./src/internal/
 RUN CGO_ENABLED=0 GOOS=linux go build -o main ./src/udp-server/
 
 FROM scratch
