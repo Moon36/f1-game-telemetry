@@ -1,0 +1,2 @@
+user default on nopass ~* &* +@all
+user reader on nopass ~csv:* ~participant:* +@read -@all

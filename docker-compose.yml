@@ -76,8 +76,11 @@ services:
   database:
     container_name: Database
     image: redis:alpine
+    volumes:
+      - ./database/users/users.acl:/etc/redis/users.acl
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
+    command: ["redis-server", "--aclfile", "/etc/redis/users.acl"]
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
