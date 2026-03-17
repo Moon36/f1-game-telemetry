@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"encoding/csv"
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
@@ -109,6 +110,17 @@ func setupStaticData(ctx context.Context, redisClient *redis.Client, fs embed.FS
 	return nil
 }
 
+func updateRedisWithParticipantData(ctx context.Context, redisClient *redis.Client, participantsPacket packets.PacketParticipantsData) {
+	for i, participant := range participantsPacket.M_participants {
+		redisKey := fmt.Sprintf("participant:%d", i)
+		err := redisClient.JSONSet(ctx, redisKey, "$", participant).Err()
+		if err != nil {
+			log.Printf("failed to store participant data in Redis: %v\n", err)
+		}
+	}
+	log.Println("Successfully updated Redis with new participant data.")
+}
+
 func main() {
 	// Get environment variables
 	kafka_address := os.Getenv("KAFKA_ADDRESS")
@@ -157,7 +169,7 @@ func main() {
 	consumer := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{kafka_address + ":" + kafka_port},
 		Topic:   packets.TOPIC_PARTICIPANT_DATA,
-		GroupID: "db-manager-consumer-id",
+		GroupID: "db-manager-consumer",
 	})
 	defer func() {
 		err := consumer.Close()
@@ -168,15 +180,26 @@ func main() {
 
 	log.Println("Database manager started, consuming from Kafka topic:", packets.TOPIC_PARTICIPANT_DATA)
 	for {
-		m, err := consumer.ReadMessage(context.Background())
+		msg, err := consumer.ReadMessage(context.Background())
 		if err != nil {
 			log.Fatal("an error occurred while trying to read message from Kafka:", err)
 			break
 		}
 
-		// TODO: Handle participant parsing
-		// TODO: Store participant data in Redis (define TTL?)
-		fmt.Printf("message at topic/partition/offset %v/%v/%v: %s = %s\n", m.Topic, m.Partition, m.Offset, string(m.Key), string(m.Value))
+		if msg.Topic != packets.TOPIC_PARTICIPANT_DATA {
+			continue
+		}
+
+		fmt.Println("Received participants data.")
+		participantsPacket := packets.PacketParticipantsData{}
+		err = json.Unmarshal(msg.Value, &participantsPacket)
+		if err != nil {
+			log.Printf("failed to unmarshal participant data: %v", err)
+			continue
+		}
+
+		fmt.Println("Refreshing Redis with new data...")
+		go updateRedisWithParticipantData(ctx, rdb, participantsPacket)
 	}
 
 	if err := consumer.Close(); err != nil {
