@@ -131,7 +131,7 @@ func updateRedisWithParticipantData(ctx context.Context,
 			log.Printf("failed to store participant data in Redis: %v\n", err)
 		}
 	}
-	log.Println("Successfully updated Redis with new participant data.")
+	log.Println("successfully updated Redis with new participant data.")
 }
 
 func main() {
@@ -159,7 +159,7 @@ func main() {
 
 	// Setup Redis client
 	var ctx = context.Background()
-	fmt.Print("Setting up Redis client at address: ", redis_address, ":", redis_port, "\n")
+	log.Println("Setting up Redis client at address:", redis_address, " and port:", redis_port)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redis_address + ":" + redis_port,
 		Password: "",
@@ -199,7 +199,7 @@ func main() {
 			break
 		}
 
-		fmt.Println("Received participants data.")
+		log.Println("Received participants data.")
 		participantsPacket := packets.PacketParticipantsData{}
 		err = json.Unmarshal(msg.Value, &participantsPacket)
 		if err != nil {
@@ -207,7 +207,7 @@ func main() {
 			continue
 		}
 
-		fmt.Println("Refreshing Redis with new data...")
+		log.Println("Refreshing Redis with new data...")
 		go updateRedisWithParticipantData(ctx, rdb, participantsPacket)
 	}
 
