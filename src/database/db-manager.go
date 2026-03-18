@@ -186,10 +186,6 @@ func main() {
 			break
 		}
 
-		if msg.Topic != packets.TOPIC_PARTICIPANT_DATA {
-			continue
-		}
-
 		fmt.Println("Received participants data.")
 		participantsPacket := packets.PacketParticipantsData{}
 		err = json.Unmarshal(msg.Value, &participantsPacket)
