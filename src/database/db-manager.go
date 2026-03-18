@@ -44,7 +44,8 @@ Parameters:
   - filePath: The path to the CSV file to be read.
 
 Returns:
-  - A map of string keys and string values containing the contents of the CSV file, or an error if the file could not be read.
+  - A map of string keys and string values containing the contents of the CSV file, or an error if the file could not be
+    read.
 */
 func readCsvFile(fs embed.FS, filePath string) (map[string]string, error) {
 	f, err := fs.Open(filePath)
@@ -110,7 +111,19 @@ func setupStaticData(ctx context.Context, redisClient *redis.Client, fs embed.FS
 	return nil
 }
 
-func updateRedisWithParticipantData(ctx context.Context, redisClient *redis.Client, participantsPacket packets.PacketParticipantsData) {
+/*
+Updates the Redis database with participant data from the given PacketParticipantsData struct. Each participant's data
+is stored in Redis under a key formatted as "participant:{index}", where {index} is the participant's index in the
+M_participants slice of the PacketParticipantsData struct.
+
+Parameters:
+  - ctx: The context for managing the lifecycle of Redis operations.
+  - redisClient: The Redis client used to interact with the Redis database.
+  - participantsPacket: The PacketParticipantsData struct containing the participant data to be stored in Redis.
+*/
+func updateRedisWithParticipantData(ctx context.Context,
+	redisClient *redis.Client,
+	participantsPacket packets.PacketParticipantsData) {
 	for i, participant := range participantsPacket.M_participants {
 		redisKey := fmt.Sprintf("participant:%d", i)
 		err := redisClient.JSONSet(ctx, redisKey, "$", participant).Err()
