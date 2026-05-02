@@ -10,6 +10,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
 	common "github.com/moon36/f1-game-telemetry/src/internal"
 	"github.com/moon36/f1-game-telemetry/src/internal/packets"
@@ -124,14 +125,121 @@ Parameters:
 func updateRedisWithParticipantData(ctx context.Context,
 	redisClient *redis.Client,
 	participantsPacket packets.PacketParticipantsData) {
+	wg := sync.WaitGroup{}
+	errorChan := make(chan error, len(participantsPacket.M_participants))
+
 	for i, participant := range participantsPacket.M_participants {
-		redisKey := fmt.Sprintf("participant:%d", i)
-		err := redisClient.JSONSet(ctx, redisKey, "$", participant).Err()
+		wg.Add(1)
+		go translateAndStoreParticipantData(ctx, redisClient, i, participant, errorChan, &wg)
+	}
+
+	wg.Wait()
+	close(errorChan)
+
+	if len(errorChan) != 0 {
+		log.Println("some participants failed to be updated in Redis. Total errors:",
+			fmt.Sprintf("%d/%d:", len(errorChan), len(participantsPacket.M_participants)))
+
+		for err := range errorChan {
+			log.Printf("an error occurred while updating Redis with participant data: %v", err)
+		}
+		return
+	}
+
+	log.Println("successfully updated Redis with new participant data.")
+}
+
+func translateAndStoreParticipantData(ctx context.Context,
+	redisClient *redis.Client,
+	idx int,
+	participant packets.ParticipantData,
+	errorChan chan error,
+	wg *sync.WaitGroup) {
+	defer wg.Done()
+
+	resolvedParticipant, err := resolveParticipantIDs(ctx, redisClient, participant)
+	if err != nil {
+		errorChan <- err
+		return
+	}
+
+	redisKey := fmt.Sprintf("participant:%d", idx)
+	err = redisClient.JSONSet(ctx, redisKey, "$", resolvedParticipant).Err()
+	if err != nil {
+		errorChan <- err
+	}
+}
+
+/*
+Resolves the IDs in the given ParticipantData struct to their corresponding names using the data stored in Redis.
+
+Parameters:
+  - ctx: The context for managing the lifecycle of Redis operations.
+  - redisClient: The Redis client used to interact with the Redis database.
+  - participant: The ParticipantData struct containing the participant data with IDs to be resolved.
+*/
+func resolveParticipantIDs(ctx context.Context,
+	redisClient *redis.Client,
+	participant packets.ParticipantData) (packets.StoreParticipant, error) {
+	storeParticipant := packets.StoreParticipant{
+		M_aiControlled:    participant.M_aiControlled,
+		M_networkId:       participant.M_networkId,
+		M_myTeam:          participant.M_myTeam,
+		M_raceNumber:      participant.M_raceNumber,
+		M_name:            participant.M_name,
+		M_yourTelemetry:   participant.M_yourTelemetry,
+		M_showOnlineNames: participant.M_showOnlineNames,
+	}
+	err := error(nil)
+	// Driver ID to name
+	driverName := "Player"
+	if participant.M_driverId != 255 {
+		driverName, err = getNameById(ctx, redisClient, "csv:drivers", participant.M_driverId)
 		if err != nil {
-			log.Printf("failed to store participant data in Redis: %v\n", err)
+			return packets.StoreParticipant{}, err
 		}
 	}
-	log.Println("successfully updated Redis with new participant data.")
+	copy(storeParticipant.M_driverName[:], []byte(driverName))
+
+	// Team ID to name
+	teamName, err := getNameById(ctx, redisClient, "csv:teams", participant.M_teamId)
+	if err != nil {
+		return packets.StoreParticipant{}, err
+	}
+	copy(storeParticipant.M_teamName[:], []byte(teamName))
+
+	// Nationality ID to name
+	nationality, err := getNameById(ctx, redisClient, "csv:nationalities", participant.M_nationality)
+	if err != nil {
+		return packets.StoreParticipant{}, err
+	}
+	copy(storeParticipant.M_teamName[:], []byte(nationality))
+
+	// Platform ID to name
+	platformName, err := getNameById(ctx, redisClient, "csv:platforms", participant.M_platform)
+	if err != nil {
+		return packets.StoreParticipant{}, err
+	}
+	copy(storeParticipant.M_teamName[:], []byte(platformName))
+
+	return storeParticipant, nil
+}
+
+/*
+Looks for the given ID in the given hash-set in Redis and returns the associated value.
+
+Parameters:
+  - ctx: The context for managing the lifecycle of Redis operations.
+  - redisClient: The Redis client used to interact with the Redis database.
+  - hashSet: The hash-set/key to use for the lookup.
+  - id: The field to look up.
+*/
+func getNameById(ctx context.Context, redisClient *redis.Client, hashSet string, id uint8) (string, error) {
+	value, err := redisClient.HGet(ctx, hashSet, fmt.Sprintf("%d", id)).Result()
+	if err != nil {
+		return "", err
+	}
+	return value, nil
 }
 
 func main() {
@@ -208,7 +316,7 @@ func main() {
 		}
 
 		log.Println("Refreshing Redis with new data...")
-		go updateRedisWithParticipantData(ctx, rdb, participantsPacket)
+		updateRedisWithParticipantData(ctx, rdb, participantsPacket)
 	}
 
 	if err := consumer.Close(); err != nil {
