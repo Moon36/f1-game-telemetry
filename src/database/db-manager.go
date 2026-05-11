@@ -53,7 +53,12 @@ func readCsvFile(fs embed.FS, filePath string) (map[string]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer f.Close()
+	defer func() {
+		err := f.Close()
+		if err != nil {
+			log.Printf("failed to close file %s: %v", filePath, err)
+		}
+	}()
 
 	csvReader := csv.NewReader(f)
 	records, err := csvReader.ReadAll()
