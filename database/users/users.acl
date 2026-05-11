@@ -1,2 +1,2 @@
-user default on nopass ~* &* +@all
-user reader on nopass ~csv:* ~participant:* -@all +@read
+user admin on >MyPassword ~* &* +@all
+user default on nopass ~csv:* ~participant:* -@all +@read +ping

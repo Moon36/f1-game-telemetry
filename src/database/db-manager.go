@@ -270,7 +270,8 @@ func main() {
 	log.Println("Setting up Redis client at address:", redis_address, " and port:", redis_port)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redis_address + ":" + redis_port,
-		Password: "",
+		Username: "admin",
+		Password: "MyPassword",
 		DB:       0,
 	})
 	defer func() {
