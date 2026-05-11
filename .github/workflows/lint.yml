@@ -1,4 +1,4 @@
-name: Pylint
+name: Linter
 
 on:
   push:
@@ -60,4 +60,4 @@ jobs:
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v9
         with:
-          version: v2.6
+          version: latest
