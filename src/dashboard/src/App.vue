@@ -5,14 +5,14 @@
     >
       <span
         class="w-3 h-3 rounded-full mr-3 relative group"
-        :class="store.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
+        :class="wsStore.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
         style="box-shadow: 0 0 8px 2px currentColor;"
         aria-label="Connection status"
       >
         <span
           class="absolute left-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-900 text-gray-100 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
         >
-          {{ store.wsConnected ? 'Backend Connected' : 'Backend not Connected' }}
+          {{ wsStore.wsConnected ? 'Backend Connected' : 'Backend not Connected' }}
         </span>
       </span>
       <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0">
@@ -53,7 +53,11 @@
   <script setup lang="ts">
   import { ref, markRaw } from 'vue'
   import TyreInfo from './components/charts/TyreTempsWidget.vue'
-  import { store } from './store'
+  import { useTyreStore } from './stores/TyreStore'
+  import { useWsStore } from './stores/WsStore'
+
+  const tyreStore = useTyreStore()
+  const wsStore = useWsStore()
 
   const widgets = ref([
     {
@@ -75,7 +79,7 @@
 
 function getWidgetData(widgetId: string) {
   if (widgetId === 'TyreInfo') {
-    return { 'innerTemp': store.innerTyreTemps, 'outerTemp': store.outerTyreTemps, 'compound': store.actualTyreCompoundId }
+    return { 'innerTemp': tyreStore.innerTyreTemps, 'outerTemp': tyreStore.outerTyreTemps, 'compound': tyreStore.actualTyreCompoundId }
   }
   
   return {}

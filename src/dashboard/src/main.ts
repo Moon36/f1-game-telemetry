@@ -1,6 +1,10 @@
 import { createApp } from 'vue'
 import App from './App.vue'
-import { store } from './store'
+import { createPinia } from 'pinia'
+import { useWsStore } from './stores/WsStore'
+import { useTyreStore } from './stores/TyreStore'
+
+createApp(App).use(createPinia()).mount('#app')
 
 // Create a runtime config
 declare global {
@@ -11,9 +15,12 @@ declare global {
   }
 }
 
+// Access stores
+const wsStore = useWsStore()
+const tyreStore = useTyreStore()
+
 const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? '8282'
 const reconnectInterval = 1000
-
 
 // Create WebSocket connection
 connectWebSocket(wsPort)
@@ -23,7 +30,7 @@ function connectWebSocket(port: string) {
   const ws = new WebSocket(`ws://localhost:${port}`)
   ws.onopen = () => {
     console.log('WebSocket connected')
-    store.wsConnected = true
+    wsStore.setWsConnected(true)
   }
 
   ws.onmessage = (event) => {
@@ -32,7 +39,7 @@ function connectWebSocket(port: string) {
 
   ws.onclose = function (event) {
     console.log('Socket was closed.', event.reason);
-    store.wsConnected = false
+    wsStore.setWsConnected(false)
     setTimeout(function () {
       connectWebSocket(port);
     }, reconnectInterval);
@@ -41,7 +48,7 @@ function connectWebSocket(port: string) {
   ws.onerror = (error) => {
     console.error('WebSocket error:', error)
     ws.close()
-    store.wsConnected = false
+    wsStore.setWsConnected(false)
   };
 }
 
@@ -65,27 +72,13 @@ function handleWSMessage(event: MessageEvent) {
       const newOuterTemps = data['data']['M_carTelemetry'][player_id]['M_tyresSurfaceTemperature']
 
       // Mutate array in place to keep reactivity
-      if (Array.isArray(newInnerTemps) && newInnerTemps.length === 4) {
-        store.innerTyreTemps.splice(0, 4, ...newInnerTemps)
-      } else {
-        console.warn('Invalid inner tyre temperature data:', newInnerTemps)
-      }
-
-      if (Array.isArray(newOuterTemps) && newOuterTemps.length === 4) {
-        store.outerTyreTemps.splice(0, 4, ...newOuterTemps)
-      } else {
-        console.warn('Invalid outer tyre temperature data:', newOuterTemps)
-      }
+      tyreStore.updateTyreTemps(newInnerTemps, newOuterTemps)
       break
     }
     case 'telemetry.car_status': {
       // Handle car status data
       const compoundId = data['data']['M_carStatusData'][player_id]['M_actualTyreCompound']
-      if (typeof compoundId === 'number') {
-        store.actualTyreCompoundId = compoundId
-      } else {
-        console.warn('Invalid tyre compound ID data:', compoundId)
-      }
+      tyreStore.updateTyreCompound(compoundId)
       break
     }
     default:
@@ -93,6 +86,3 @@ function handleWSMessage(event: MessageEvent) {
       break
   }
 }
-
-
-createApp(App).mount('#app')
