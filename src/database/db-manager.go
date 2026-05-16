@@ -42,6 +42,7 @@ Each row in the CSV file is expected to have two columns, where the first column
 column as the value in the resulting map.
 
 Parameters:
+  - fs: The embedded file system containing the CSV file to be read.
   - filePath: The path to the CSV file to be read.
 
 Returns:
@@ -89,7 +90,8 @@ The Redis keys are prefixed with "csv:" followed by the base name of the CSV fil
 Parameters:
   - ctx: The context for managing the lifecycle of Redis operations.
   - redisClient: The Redis client used to interact with the Redis database.
-  - csvFilePaths: A slice of file paths to the CSV files that contain the static data to be loaded into Redis.
+  - fs: The embedded file system containing the CSV files to be read.
+  - folderPath: The path to the folder containing the CSV files.
 
 Returns:
   - An error if any issues occur while reading the CSV files or storing the data in Redis, otherwise nil.
