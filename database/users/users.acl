@@ -1,0 +1,2 @@
+user admin on >MyPassword ~* &* +@all
+user default on nopass ~csv:* ~participant:* -@all +@read +ping

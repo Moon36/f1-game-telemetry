@@ -12,7 +12,8 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/moon36/f1-game-telemetry/src/udp-server/packets"
+	common "github.com/moon36/f1-game-telemetry/src/internal"
+	"github.com/moon36/f1-game-telemetry/src/internal/packets"
 
 	"github.com/segmentio/kafka-go"
 )
@@ -161,18 +162,18 @@ func main() {
 	// Get environment variables
 	srv_port := os.Getenv("PORT")
 	if srv_port == "" {
-		log.Println("No PORT environment variable set, using default port", PORT)
-		srv_port = PORT
+		log.Println("No PORT environment variable set, using default port", common.PORT)
+		srv_port = common.PORT
 	}
 	kafka_address := os.Getenv("KAFKA_ADDRESS")
 	if kafka_address == "" {
-		log.Println("No KAFKA_ADDRESS environment variable set, using default address", KAFKA_ADDRESS)
-		kafka_address = KAFKA_ADDRESS
+		log.Println("No KAFKA_ADDRESS environment variable set, using default address", common.KAFKA_ADDRESS)
+		kafka_address = common.KAFKA_ADDRESS
 	}
 	kafka_port := os.Getenv("KAFKA_PORT")
 	if kafka_port == "" {
-		log.Println("No KAFKA_PORT environment variable set, using default port", KAFKA_PORT)
-		kafka_port = KAFKA_PORT
+		log.Println("No KAFKA_PORT environment variable set, using default port", common.KAFKA_PORT)
+		kafka_port = common.KAFKA_PORT
 	}
 
 	// Setup Apache Kafka topics
@@ -196,7 +197,7 @@ func main() {
 	}()
 
 	// Setup UDP server
-	addr, err := net.ResolveUDPAddr("udp", ADDR+":"+srv_port)
+	addr, err := net.ResolveUDPAddr("udp", common.ADDR+":"+srv_port)
 	if err != nil {
 		log.Fatalln(err)
 		return
@@ -214,7 +215,7 @@ func main() {
 		}
 	}()
 
-	log.Println("UDP server listening on", ADDR+":"+srv_port)
+	log.Println("UDP server listening on", common.ADDR+":"+srv_port)
 
 	// Endless receive loop
 	for {
@@ -224,6 +225,6 @@ func main() {
 			log.Println(clientAddr, "- Error reading:", err)
 		}
 
-		go handleClientMessage(clientAddr, buffer[:n], producer, MESSAGE_TIMEOUT)
+		go handleClientMessage(clientAddr, buffer[:n], producer, common.MESSAGE_TIMEOUT)
 	}
 }
