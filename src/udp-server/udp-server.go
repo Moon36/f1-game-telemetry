@@ -14,12 +14,13 @@ import (
 
 	common "github.com/moon36/f1-game-telemetry/src/internal"
 	"github.com/moon36/f1-game-telemetry/src/internal/packets"
+	v23 "github.com/moon36/f1-game-telemetry/src/internal/packets/v23"
 
 	"github.com/segmentio/kafka-go"
 )
 
 func processPacket23(packetID uint8, message []byte) (any, string, error) {
-	createPacket, prst := packets.PACKET_MAP_23[packetID]
+	createPacket, prst := v23.PACKET_MAP[packetID]
 	if !prst {
 		return nil, "", fmt.Errorf("unknown packet ID: %d", packetID)
 	}
@@ -28,18 +29,18 @@ func processPacket23(packetID uint8, message []byte) (any, string, error) {
 	var err error
 	var topicName string
 
-	if packetID == packets.EVENT_DATA_ID {
+	if packetID == v23.EVENT_DATA_ID {
 		if len(message) < 4 {
 			return nil, "", fmt.Errorf("supposed event data packet ('23) does not contain event code")
 		}
 		eventCode := string(message[:4])
-		createPacket, prst = packets.EVENT_MAP_23[eventCode]
+		createPacket, prst = v23.EVENT_MAP[eventCode]
 		if !prst {
 			return nil, "", fmt.Errorf("unknown event code: %s", eventCode)
 		}
 	}
 	packetData = createPacket()
-	topicName = packets.PACKET_TOPIC_MAP_23[packetID]
+	topicName = v23.PACKET_TOPIC_MAP[packetID]
 
 	err = parsePacketData(message, packetData)
 	return packetData, topicName, err
@@ -60,7 +61,7 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 	var topicName string
 
 	switch header.M_packetFormat {
-	case packets.PACKET_FORMAT_ID_23:
+	case v23.PACKET_FORMAT_ID:
 		packetData, topicName, err = processPacket23(header.M_packetId, message)
 	default:
 		log.Println(clientAddress, "- Unknown packet format ID:", header.M_packetFormat,
