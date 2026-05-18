@@ -277,8 +277,8 @@ func main() {
 	log.Println("Setting up Redis client at address:", redis_address, " and port:", redis_port)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redis_address + ":" + redis_port,
-		Username: "admin",
-		Password: "MyPassword",
+		Username: USERNAME,
+		Password: PASSWORD,
 		DB:       0,
 	})
 	defer func() {
@@ -298,7 +298,7 @@ func main() {
 	consumer := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{kafka_address + ":" + kafka_port},
 		Topic:   packets.TOPIC_PARTICIPANT_DATA,
-		GroupID: "db-manager-consumer",
+		GroupID: KAFKA_CONSUMER_GROUP_ID,
 	})
 	defer func() {
 		err := consumer.Close()
