@@ -1,8 +1,9 @@
 import { createApp } from 'vue'
-import App from './App.vue'
+import App from '@/App.vue'
 import { createPinia } from 'pinia'
-import { useWsStore } from './stores/WsStore'
-import { useTyreStore } from './stores/TyreStore'
+import { useWsStore } from '@/stores/WsStore'
+import { useTyreStore } from '@/stores/TyreStore'
+import { parserMap } from '@/services/parsers/parserMapper'
 
 createApp(App).use(createPinia()).mount('#app')
 
@@ -15,7 +16,7 @@ declare global {
   }
 }
 
-// Access stores
+// Setup stores
 const wsStore = useWsStore()
 const tyreStore = useTyreStore()
 
@@ -53,32 +54,43 @@ function connectWebSocket(port: string) {
 }
 
 function handleWSMessage(event: MessageEvent) {
-  let data
+  // Parse message data as JSON
+  let message
   try {
-    data = JSON.parse(event.data)
+    message = JSON.parse(event.data)
   } catch (err) {
     console.error('Failed to parse WS message as JSON', err)
     return
   }
 
-  // Get player car index in array
-  const player_id = data['data']['M_header']['M_playerCarIndex']
+  // Extract data and header
+  const data = message?.['data']
+  const header = data?.['M_header']
+  if (!data) {
+    console.warn('Received WS message with missing data:', message)
+    return
+  }
+  if (!header) {
+    console.warn('Received WS message with missing header:', message)
+    return
+  }
 
-  switch (data?.topic) {
+  // Get player car index in array
+  const player_id = header['M_playerCarIndex']
+  const parser = parserMap[header['M_packetFormat']]
+
+  switch (message.topic) {
     case 'telemetry.car_telemetry': {
 
-      // Handle car telemetry data
-      const newInnerTemps = data['data']['M_carTelemetry'][player_id]['M_tyresInnerTemperature']
-      const newOuterTemps = data['data']['M_carTelemetry'][player_id]['M_tyresSurfaceTemperature']
+      const carData = parser.parseCarTelemetry(data, player_id)
 
-      // Mutate array in place to keep reactivity
-      tyreStore.updateTyreTemps(newInnerTemps, newOuterTemps)
+      tyreStore.updateTyreTemps(carData.innerTyreTemps, carData.outerTyreTemps)
       break
     }
     case 'telemetry.car_status': {
       // Handle car status data
-      const compoundId = data['data']['M_carStatusData'][player_id]['M_actualTyreCompound']
-      tyreStore.updateTyreCompound(compoundId)
+      const statusData = parser.parseCarStatusTelemetry(data, player_id)
+      tyreStore.updateTyreCompound(statusData.actualTyreCompoundId)
       break
     }
     default:

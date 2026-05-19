@@ -14,3 +14,5 @@ export enum TyreCompounds {
     HARD = 'Hard',
     UNKNOWN = 'Unknown',
 }
+
+export const PACKET_FORMAT_ID = 2023;
