@@ -126,8 +126,8 @@
 </template>
 
 <script setup lang="ts">
-import ChartWrapper from '../ChartWrapper.vue'
-import { TyreCompounds } from '../../constants.ts'
+import ChartWrapper from '@/components/ChartWrapper.vue'
+import { TyreCompounds } from '@/constants.ts'
 
 const tempColorCodes = {
   cold: '#3b82f6',
