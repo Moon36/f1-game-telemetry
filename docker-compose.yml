@@ -17,35 +17,39 @@ services:
         condition: service_healthy
 
   kafka:
-    image: bitnami/kafka:latest
+    image: apache/kafka:latest
     container_name: Kafka
     ports:
       - "${KAFKA_PORT}:${KAFKA_PORT}"
     volumes:
-      - kafka_data:/bitnami/kafka
+      - kafka_data:/apache/kafka
     environment:
       # KRaft settings
-      - KAFKA_CFG_NODE_ID=0
-      - KAFKA_CFG_PROCESS_ROLES=broker,controller
-      - KAFKA_CFG_CONTROLLER_LISTENER_NAMES=CONTROLLER
-      - KAFKA_CFG_CONTROLLER_QUORUM_VOTERS=0@kafka:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_NODE_ID=0
+      - KAFKA_PROCESS_ROLES=broker,controller
+      - KAFKA_CONTROLLER_LISTENER_NAMES=CONTROLLER
+      - KAFKA_CONTROLLER_QUORUM_VOTERS=0@kafka:${KAFKA_CONTROLLER_PORT}
 
       # Listeners
-      - KAFKA_CFG_LISTENERS=PLAINTEXT://:${KAFKA_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT}
-      - KAFKA_CFG_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_ADDRESS}:${KAFKA_PORT}
-      - KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
+      - KAFKA_LISTENERS=PLAINTEXT://:${KAFKA_PORT},CONTROLLER://:${KAFKA_CONTROLLER_PORT}
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://${KAFKA_ADDRESS}:${KAFKA_PORT}
+      - KAFKA_LISTENER_SECURITY_PROTOCOL_MAP=CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT
 
       # Topic settings
-      - KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE=false
-      - KAFKA_CFG_NUM_PARTITIONS=1
-      - KAFKA_CFG_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=false
+      - KAFKA_NUM_PARTITIONS=1
+      - KAFKA_DEFAULT_REPLICATION_FACTOR=1
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR=1
+      - KAFKA_TRANSACTION_STATE_LOG_MIN_ISR=1
+      - KAFKA_MIN_IN_SYNC_REPLICAS=1
     healthcheck:
-      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:${KAFKA_PORT} --list"]
+      test: nc -z localhost 9092 || exit -1
       interval: 10s
       timeout: 10s
       retries: 5
       start_period: 30s
-  
+
   dashboard:
     container_name: Dashboard
     build:
@@ -72,7 +76,7 @@ services:
     depends_on:
       kafka:
         condition: service_healthy
-  
+
   database:
     container_name: Database
     image: redis:alpine
@@ -87,7 +91,7 @@ services:
       interval: 1s
       timeout: 3s
       retries: 5
-  
+
   db-manager:
     container_name: DB-Manager
     build:
