@@ -1,8 +1,10 @@
 import { createApp } from 'vue'
-import App from './App.vue'
+import App from '@/App.vue'
 import { createPinia } from 'pinia'
-import { useWsStore } from './stores/WsStore'
-import { useTyreStore } from './stores/TyreStore'
+import { useWsStore } from '@/stores/WsStore'
+import { useTyreStore } from '@/stores/TyreStore'
+import { parserMap } from '@/services/parsers/parserMapper'
+import type { GenericRawTelemetry, Header } from './types/packets/packetDefinitions'
 
 createApp(App).use(createPinia()).mount('#app')
 
@@ -15,17 +17,29 @@ declare global {
   }
 }
 
-// Access stores
+// Setup stores
 const wsStore = useWsStore()
 const tyreStore = useTyreStore()
 
 const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? '8282'
-const reconnectInterval = 1000
 
 // Create WebSocket connection
-connectWebSocket(wsPort)
+connectWebSocket(wsPort, handleWSMessage)
 
-function connectWebSocket(port: string) {
+/**
+ * Creates a WebSocket connection to a server on localhost and the specified port.
+ * The provided messageHandlerCB callback function is called whenever a new message is received.
+ * This method reconnects automatically in the given time interval, if connection is lost (default is 1000ms/1s).
+ *
+ * @param port - The port number to connect to.
+ * @param messageHandlerCB - The callback function to handle incoming messages.
+ * @param reconnectInterval - The time interval in milliseconds to wait before attempting a reconnection.
+ */
+function connectWebSocket(
+  port: string,
+  messageHandlerCB: (event: MessageEvent) => void,
+  reconnectInterval: number = 1000,
+) {
   console.log(`Trying to connect to WebSocket on port ${port}...`)
   const ws = new WebSocket(`ws://localhost:${port}`)
   ws.onopen = () => {
@@ -34,51 +48,66 @@ function connectWebSocket(port: string) {
   }
 
   ws.onmessage = (event) => {
-    handleWSMessage(event)
-  };
+    messageHandlerCB(event)
+  }
 
   ws.onclose = function (event) {
-    console.log('Socket was closed.', event.reason);
+    console.log('Socket was closed.', event.reason)
     wsStore.setWsConnected(false)
     setTimeout(function () {
-      connectWebSocket(port);
-    }, reconnectInterval);
-  };
+      connectWebSocket(port, messageHandlerCB, reconnectInterval)
+    }, reconnectInterval)
+  }
 
   ws.onerror = (error) => {
     console.error('WebSocket error:', error)
     ws.close()
     wsStore.setWsConnected(false)
-  };
+  }
 }
 
+/**
+ * Handles messages from the WebSocket.
+ *
+ * @param event - The WebSocket message event.
+ */
 function handleWSMessage(event: MessageEvent) {
-  let data
+  // Parse message data as JSON
+  let message
   try {
-    data = JSON.parse(event.data)
+    message = JSON.parse(event.data)
   } catch (err) {
     console.error('Failed to parse WS message as JSON', err)
     return
   }
 
+  // Extract data and header
+  const packet: GenericRawTelemetry = message?.data
+  const header: Header = packet?.M_header
+  if (!packet) {
+    console.warn('Received WS message with missing data:', message)
+    return
+  }
+  if (!header) {
+    console.warn('Received WS message with missing header:', message)
+    return
+  }
+
   // Get player car index in array
-  const player_id = data['data']['M_header']['M_playerCarIndex']
+  const player_id = header.M_playerCarIndex
+  const parser = parserMap[header.M_packetFormat]
 
-  switch (data?.topic) {
+  switch (message.topic) {
     case 'telemetry.car_telemetry': {
+      const carData = parser.parseCarTelemetry(packet, player_id)
 
-      // Handle car telemetry data
-      const newInnerTemps = data['data']['M_carTelemetry'][player_id]['M_tyresInnerTemperature']
-      const newOuterTemps = data['data']['M_carTelemetry'][player_id]['M_tyresSurfaceTemperature']
-
-      // Mutate array in place to keep reactivity
-      tyreStore.updateTyreTemps(newInnerTemps, newOuterTemps)
+      tyreStore.updateTyreTemps(carData.innerTyreTemps, carData.outerTyreTemps)
       break
     }
     case 'telemetry.car_status': {
       // Handle car status data
-      const compoundId = data['data']['M_carStatusData'][player_id]['M_actualTyreCompound']
-      tyreStore.updateTyreCompound(compoundId)
+      const statusData = parser.parseCarStatusTelemetry(packet, player_id)
+      tyreStore.updateTyreCompound(statusData.actualTyreCompoundId)
       break
     }
     default:

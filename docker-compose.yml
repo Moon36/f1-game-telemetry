@@ -77,7 +77,7 @@ services:
     container_name: Database
     image: redis:alpine
     volumes:
-      - ./database/users/users.acl:/etc/redis/users.acl
+      - ./database/users/users.acl:/etc/redis/users.acl:ro
     ports:
       - "${REDIS_PORT}:${REDIS_PORT}"
     command: ["redis-server", "--aclfile", "/etc/redis/users.acl"]

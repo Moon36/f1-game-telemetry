@@ -14,6 +14,7 @@ import (
 
 	common "github.com/moon36/f1-game-telemetry/src/internal"
 	"github.com/moon36/f1-game-telemetry/src/internal/packets"
+	v23 "github.com/moon36/f1-game-telemetry/src/internal/packets/v23"
 
 	"github.com/redis/go-redis/v9"
 	"github.com/segmentio/kafka-go"
@@ -119,136 +120,6 @@ func setupStaticData(ctx context.Context, redisClient *redis.Client, fs embed.FS
 	return nil
 }
 
-/*
-Updates the Redis database with participant data from the given PacketParticipantsData struct. Each participant's data
-is stored in Redis under a key formatted as "participant:{index}", where {index} is the participant's index in the
-M_participants slice of the PacketParticipantsData struct.
-
-Parameters:
-  - ctx: The context for managing the lifecycle of Redis operations.
-  - redisClient: The Redis client used to interact with the Redis database.
-  - participantsPacket: The PacketParticipantsData struct containing the participant data to be stored in Redis.
-*/
-func updateRedisWithParticipantData(ctx context.Context,
-	redisClient *redis.Client,
-	participantsPacket packets.PacketParticipantsData) {
-	wg := sync.WaitGroup{}
-	errorChan := make(chan error, len(participantsPacket.M_participants))
-
-	for i, participant := range participantsPacket.M_participants {
-		wg.Add(1)
-		go translateAndStoreParticipantData(ctx, redisClient, i, participant, errorChan, &wg)
-	}
-
-	wg.Wait()
-	close(errorChan)
-
-	if len(errorChan) != 0 {
-		log.Println("some participants failed to be updated in Redis. Total errors:",
-			fmt.Sprintf("%d/%d:", len(errorChan), len(participantsPacket.M_participants)))
-
-		for err := range errorChan {
-			log.Printf("an error occurred while updating Redis with participant data: %v", err)
-		}
-		return
-	}
-
-	log.Println("successfully updated Redis with new participant data.")
-}
-
-func translateAndStoreParticipantData(ctx context.Context,
-	redisClient *redis.Client,
-	idx int,
-	participant packets.ParticipantData,
-	errorChan chan error,
-	wg *sync.WaitGroup) {
-	defer wg.Done()
-
-	resolvedParticipant, err := resolveParticipantIDs(ctx, redisClient, participant)
-	if err != nil {
-		errorChan <- err
-		return
-	}
-
-	redisKey := fmt.Sprintf("participant:%d", idx)
-	err = redisClient.JSONSet(ctx, redisKey, "$", resolvedParticipant).Err()
-	if err != nil {
-		errorChan <- err
-	}
-}
-
-/*
-Resolves the IDs in the given ParticipantData struct to their corresponding names using the data stored in Redis.
-
-Parameters:
-  - ctx: The context for managing the lifecycle of Redis operations.
-  - redisClient: The Redis client used to interact with the Redis database.
-  - participant: The ParticipantData struct containing the participant data with IDs to be resolved.
-*/
-func resolveParticipantIDs(ctx context.Context,
-	redisClient *redis.Client,
-	participant packets.ParticipantData) (packets.StoreParticipant, error) {
-	storeParticipant := packets.StoreParticipant{
-		M_aiControlled:    participant.M_aiControlled,
-		M_networkId:       participant.M_networkId,
-		M_myTeam:          participant.M_myTeam,
-		M_raceNumber:      participant.M_raceNumber,
-		M_name:            participant.M_name,
-		M_yourTelemetry:   participant.M_yourTelemetry,
-		M_showOnlineNames: participant.M_showOnlineNames,
-	}
-	err := error(nil)
-	// Driver ID to name
-	driverName := "Player"
-	if participant.M_driverId != 255 {
-		driverName, err = getNameById(ctx, redisClient, "csv:drivers", participant.M_driverId)
-		if err != nil {
-			return packets.StoreParticipant{}, err
-		}
-	}
-	copy(storeParticipant.M_driverName[:], []byte(driverName))
-
-	// Team ID to name
-	teamName, err := getNameById(ctx, redisClient, "csv:teams", participant.M_teamId)
-	if err != nil {
-		return packets.StoreParticipant{}, err
-	}
-	copy(storeParticipant.M_teamName[:], []byte(teamName))
-
-	// Nationality ID to name
-	nationality, err := getNameById(ctx, redisClient, "csv:nationalities", participant.M_nationality)
-	if err != nil {
-		return packets.StoreParticipant{}, err
-	}
-	copy(storeParticipant.M_teamName[:], []byte(nationality))
-
-	// Platform ID to name
-	platformName, err := getNameById(ctx, redisClient, "csv:platforms", participant.M_platform)
-	if err != nil {
-		return packets.StoreParticipant{}, err
-	}
-	copy(storeParticipant.M_teamName[:], []byte(platformName))
-
-	return storeParticipant, nil
-}
-
-/*
-Looks for the given ID in the given hash-set in Redis and returns the associated value.
-
-Parameters:
-  - ctx: The context for managing the lifecycle of Redis operations.
-  - redisClient: The Redis client used to interact with the Redis database.
-  - hashSet: The hash-set/key to use for the lookup.
-  - id: The field to look up.
-*/
-func getNameById(ctx context.Context, redisClient *redis.Client, hashSet string, id uint8) (string, error) {
-	value, err := redisClient.HGet(ctx, hashSet, fmt.Sprintf("%d", id)).Result()
-	if err != nil {
-		return "", err
-	}
-	return value, nil
-}
-
 func main() {
 	// Get environment variables
 	kafka_address := os.Getenv("KAFKA_ADDRESS")
@@ -277,8 +148,8 @@ func main() {
 	log.Println("Setting up Redis client at address:", redis_address, " and port:", redis_port)
 	rdb := redis.NewClient(&redis.Options{
 		Addr:     redis_address + ":" + redis_port,
-		Username: "admin",
-		Password: "MyPassword",
+		Username: USERNAME,
+		Password: PASSWORD,
 		DB:       0,
 	})
 	defer func() {
@@ -298,7 +169,7 @@ func main() {
 	consumer := kafka.NewReader(kafka.ReaderConfig{
 		Brokers: []string{kafka_address + ":" + kafka_port},
 		Topic:   packets.TOPIC_PARTICIPANT_DATA,
-		GroupID: "db-manager-consumer",
+		GroupID: KAFKA_CONSUMER_GROUP_ID,
 	})
 	defer func() {
 		err := consumer.Close()
@@ -316,15 +187,62 @@ func main() {
 		}
 
 		log.Println("Received participants data.")
-		participantsPacket := packets.PacketParticipantsData{}
-		err = json.Unmarshal(msg.Value, &participantsPacket)
+
+		var basePacket BasePacket
+		err = json.Unmarshal(msg.Value, &basePacket)
 		if err != nil {
-			log.Printf("failed to unmarshal participant data: %v", err)
+			log.Printf("failed to unmarshal base packet: %v", err)
 			continue
 		}
 
+		wg := sync.WaitGroup{}
+		var ch chan ChannelData
+
+		switch basePacket.M_header.M_packetFormat {
+		case v23.PACKET_FORMAT_ID:
+			log.Println("Processing packet with format ID 2023")
+			participantsPacket := v23.PacketParticipantsData{}
+			err = json.Unmarshal(msg.Value, &participantsPacket)
+
+			if err != nil {
+				log.Printf("failed to unmarshal participant data: %v", err)
+				continue
+			}
+
+			ch = make(chan ChannelData, len(participantsPacket.M_participants))
+
+			for idx, participant := range participantsPacket.M_participants {
+				wg.Add(1)
+				go enrichParticipant23(ctx, rdb, uint8(idx), participant, ch)
+			}
+		default:
+			log.Println("Received packet with unknown format ID:", basePacket.M_header.M_packetFormat)
+			continue
+		}
+
+		go func() {
+			// Wait for all goroutines to finish and then close the channel to signal that no more data will be sent
+			wg.Wait()
+			close(ch)
+		}()
+
+		// Consume enriched participant data from channel until closed and store in Redis
+		for chData := range ch {
+			err := chData.Error
+			if err != nil {
+				log.Printf("error enriching participant data for participant with ID %d: %v",
+					chData.Idx, err)
+				continue
+			}
+			redisKey := fmt.Sprintf("participant:%d", chData.Idx)
+			err = rdb.JSONSet(ctx, redisKey, "$", chData.ParticipantData).Err()
+			if err != nil {
+				log.Printf("failed to store participant data in Redis for participant with ID %d: %v",
+					chData.Idx, err)
+			}
+		}
+
 		log.Println("Refreshing Redis with new data...")
-		updateRedisWithParticipantData(ctx, rdb, participantsPacket)
 	}
 
 	if err := consumer.Close(); err != nil {
