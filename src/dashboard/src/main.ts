@@ -21,12 +21,24 @@ const wsStore = useWsStore()
 const tyreStore = useTyreStore()
 
 const wsPort = window.APP_CONFIG?.BACKEND_PORT ?? '8282'
-const reconnectInterval = 1000
 
 // Create WebSocket connection
-connectWebSocket(wsPort)
+connectWebSocket(wsPort, handleWSMessage)
 
-function connectWebSocket(port: string) {
+/**
+ * Creates a WebSocket connection to a server on localhost and the specified port.
+ * The provided messageHandlerCB callback function is called whenever a new message is received.
+ * This method reconnects automatically in the given time interval, if connection is lost (default is 1000ms/1s).
+ *
+ * @param port - The port number to connect to.
+ * @param messageHandlerCB - The callback function to handle incoming messages.
+ * @param reconnectInterval - The time interval in milliseconds to wait before attempting a reconnection.
+ */
+function connectWebSocket(
+  port: string,
+  messageHandlerCB: (event: MessageEvent) => void,
+  reconnectInterval: number = 1000,
+) {
   console.log(`Trying to connect to WebSocket on port ${port}...`)
   const ws = new WebSocket(`ws://localhost:${port}`)
   ws.onopen = () => {
@@ -35,24 +47,29 @@ function connectWebSocket(port: string) {
   }
 
   ws.onmessage = (event) => {
-    handleWSMessage(event)
-  };
+    messageHandlerCB(event)
+  }
 
   ws.onclose = function (event) {
-    console.log('Socket was closed.', event.reason);
+    console.log('Socket was closed.', event.reason)
     wsStore.setWsConnected(false)
     setTimeout(function () {
-      connectWebSocket(port);
-    }, reconnectInterval);
-  };
+      connectWebSocket(port, messageHandlerCB, reconnectInterval)
+    }, reconnectInterval)
+  }
 
   ws.onerror = (error) => {
     console.error('WebSocket error:', error)
     ws.close()
     wsStore.setWsConnected(false)
-  };
+  }
 }
 
+/**
+ * Handles messages from the WebSocket.
+ *
+ * @param event - The WebSocket message event.
+ */
 function handleWSMessage(event: MessageEvent) {
   // Parse message data as JSON
   let message
@@ -81,7 +98,6 @@ function handleWSMessage(event: MessageEvent) {
 
   switch (message.topic) {
     case 'telemetry.car_telemetry': {
-
       const carData = parser.parseCarTelemetry(data, player_id)
 
       tyreStore.updateTyreTemps(carData.innerTyreTemps, carData.outerTyreTemps)
