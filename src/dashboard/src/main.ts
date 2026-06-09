@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import { useWsStore } from '@/stores/WsStore'
 import { useTyreStore } from '@/stores/TyreStore'
 import { parserMap } from '@/services/parsers/parserMapper'
+import type { GenericRawTelemetry, Header } from './types/packets/packetDefinitions'
 
 createApp(App).use(createPinia()).mount('#app')
 
@@ -81,9 +82,9 @@ function handleWSMessage(event: MessageEvent) {
   }
 
   // Extract data and header
-  const data = message?.['data']
-  const header = data?.['M_header']
-  if (!data) {
+  const packet: GenericRawTelemetry = message?.data
+  const header: Header = packet?.M_header
+  if (!packet) {
     console.warn('Received WS message with missing data:', message)
     return
   }
@@ -93,19 +94,19 @@ function handleWSMessage(event: MessageEvent) {
   }
 
   // Get player car index in array
-  const player_id = header['M_playerCarIndex']
-  const parser = parserMap[header['M_packetFormat']]
+  const player_id = header.M_playerCarIndex
+  const parser = parserMap[header.M_packetFormat]
 
   switch (message.topic) {
     case 'telemetry.car_telemetry': {
-      const carData = parser.parseCarTelemetry(data, player_id)
+      const carData = parser.parseCarTelemetry(packet, player_id)
 
       tyreStore.updateTyreTemps(carData.innerTyreTemps, carData.outerTyreTemps)
       break
     }
     case 'telemetry.car_status': {
       // Handle car status data
-      const statusData = parser.parseCarStatusTelemetry(data, player_id)
+      const statusData = parser.parseCarStatusTelemetry(packet, player_id)
       tyreStore.updateTyreCompound(statusData.actualTyreCompoundId)
       break
     }
