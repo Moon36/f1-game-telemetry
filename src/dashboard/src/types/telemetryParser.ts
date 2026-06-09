@@ -1,7 +1,8 @@
-import type { CarData } from '@/types/telemetry/carTelemetry';
-import type { CarStatusData } from '@/types/telemetry/carStatusTelemetry';
+import type { GenericRawTelemetry } from '@/types/packets/packetDefinitions'
+import type { CarData } from '@/types/telemetry/carTelemetry'
+import type { CarStatusData } from '@/types/telemetry/carStatusTelemetry'
 
-export interface TelemetryParser {
-  parseCarTelemetry(rawData: any, carIndex: number): CarData;
-  parseCarStatusTelemetry(rawData: any, carIndex: number): CarStatusData;
+export interface TelemetryParser<RawTelemetry = GenericRawTelemetry> {
+  parseCarTelemetry(rawData: RawTelemetry, carIndex: number): CarData
+  parseCarStatusTelemetry(rawData: RawTelemetry, carIndex: number): CarStatusData
 }
