@@ -605,6 +605,7 @@ type LobbyPlayerData struct {
  * Frequency: 10 per second
  */
 type PacketCarDamageData struct {
+	M_header        packets.PacketHeader
 	M_carDamageData [22]CarDamageData
 }
 type CarDamageData struct {
