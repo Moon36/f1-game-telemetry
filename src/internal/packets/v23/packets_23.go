@@ -238,14 +238,12 @@ type GenericEvent struct {
 type PacketEventSSTA struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for SSTA
 }
 
 // Session ended
 type PacketEventSEND struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for SEND
 }
 
 // Fastest lap
@@ -266,14 +264,12 @@ type PacketEventRTMT struct {
 type PacketEventDRSE struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for DRSE
 }
 
 // DRS disabled
 type PacketEventDRSD struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for DRSD
 }
 
 // Team mate in pits
@@ -287,7 +283,6 @@ type PacketEventTMPT struct {
 type PacketEventCHQF struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for CHQF
 }
 
 // Race winner
@@ -322,7 +317,6 @@ type PacketEventSTLG struct {
 type PacketEventLGOT struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for LGOT
 }
 
 // Drive through penalty served
@@ -357,7 +351,6 @@ type PacketEventBUTN struct {
 type PacketEventRDFL struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for RDFL
 }
 
 // Overtake
