@@ -18,6 +18,16 @@ import (
 	"github.com/segmentio/kafka-go"
 )
 
+/*
+Handles a client message. It parses the header, maps it to a version specific struct representation and submits the
+parsed and marshalled message with the corresponding topic to the message queue.
+
+Parameters:
+  - clientAddress: The address of the client that sent the message.
+  - message: The raw bytes of the message received from the client.
+  - kafkaProducer: A Kafka producer instance used to send messages to a Kafka topic.
+  - kafkaTimeout: The timeout duration for sending messages through the Kafka producer.
+*/
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
 	kafkaTimeout time.Duration) {
 	// Parse packet header
@@ -70,6 +80,17 @@ func parsePacketData(message []byte, packet any) error {
 	return nil
 }
 
+/*
+Creates Kafka topics using the provided address, port, and topic list.
+
+Parameters:
+  - address: The address of the Kafka broker.
+  - port: The port number of the Kafka broker.
+  - topics: A list of topic names to create.
+
+Returns:
+  - error: An error if any step fails, otherwise nil.
+*/
 func createKafkaTopics(address string, port string, topics []string) error {
 	conn, err := kafka.Dial("tcp", address+":"+port)
 	if err != nil {
@@ -107,6 +128,19 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	return err
 }
 
+/*
+Submits a JSON message to a Kafka topic with the given timeout.
+If the message cannot be sent within the timeout, it will return an error.
+
+Parameters:
+  - kafkaProducer: A Kafka producer instance.
+  - topic: The topic to send the message to.
+  - jsonMessage: The JSON message to be sent.
+  - timeout: The maximum time to wait for the message to be sent.
+
+Returns:
+  - error: If an error occurs during the message submission.
+*/
 func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage string, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
