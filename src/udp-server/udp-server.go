@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -13,38 +12,11 @@ import (
 	"time"
 
 	common "github.com/moon36/f1-game-telemetry/src/internal"
+	"github.com/moon36/f1-game-telemetry/src/internal/mappers"
 	"github.com/moon36/f1-game-telemetry/src/internal/packets"
-	v23 "github.com/moon36/f1-game-telemetry/src/internal/packets/v23"
 
 	"github.com/segmentio/kafka-go"
 )
-
-func processPacket23(packetID uint8, message []byte) (any, string, error) {
-	createPacket, prst := v23.PACKET_MAP[packetID]
-	if !prst {
-		return nil, "", fmt.Errorf("unknown packet ID: %d", packetID)
-	}
-
-	var packetData any
-	var err error
-	var topicName string
-
-	if packetID == v23.EVENT_DATA_ID {
-		if len(message) < 4 {
-			return nil, "", fmt.Errorf("supposed event data packet ('23) does not contain event code")
-		}
-		eventCode := string(message[:4])
-		createPacket, prst = v23.EVENT_MAP[eventCode]
-		if !prst {
-			return nil, "", fmt.Errorf("unknown event code: %s", eventCode)
-		}
-	}
-	packetData = createPacket()
-	topicName = v23.PACKET_TOPIC_MAP[packetID]
-
-	err = parsePacketData(message, packetData)
-	return packetData, topicName, err
-}
 
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
 	kafkaTimeout time.Duration) {
@@ -56,19 +28,21 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 		return
 	}
 
-	// Generic packet variable and topic name
-	var packetData any
-	var topicName string
-
-	switch header.M_packetFormat {
-	case v23.PACKET_FORMAT_ID:
-		packetData, topicName, err = processPacket23(header.M_packetId, message)
-	default:
-		log.Println(clientAddress, "- Unknown packet format ID:", header.M_packetFormat,
-			"(This format might not be supported yet)")
+	mapper, prst := mappers.PACKET_MAPPER_MAP[header.M_packetFormat]
+	if !prst {
+		log.Println(clientAddress, "- No packet mapper registered (yet) for packet format:", header.M_packetFormat)
 		return
 	}
 
+	packetData, topicName, err := mapper.MapPacket(header, message)
+
+	if err != nil {
+		log.Println(clientAddress, "- Could not map packet of packet format:", header.M_packetFormat, "\n",
+			"Failed with error", err)
+		return
+	}
+
+	err = parsePacketData(message, packetData)
 	if err != nil {
 		log.Println(clientAddress, "- Error parsing packet data:", err)
 		return
@@ -154,8 +128,6 @@ func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage s
 		}
 	}
 
-	// TODO: Remove me
-	log.Println("Message sent to Kafka topic:", topic)
 	return nil
 }
 
