@@ -58,6 +58,7 @@ const EVENT_CODE_RCWN = "RCWN" // Race winner
 const EVENT_CODE_PENA = "PENA" // Penalty issued
 const EVENT_CODE_SPTP = "SPTP" // Speed trap triggered
 const EVENT_CODE_STLG = "STLG" // Start lights
+const EVENT_CODE_LGOT = "LGOT" // Lights out
 const EVENT_CODE_DTSV = "DTSV" // Drive through penalty served
 const EVENT_CODE_SGSV = "SGSV" // Stop go penalty served
 const EVENT_CODE_FLBK = "FLBK" // Flashback
@@ -315,6 +316,13 @@ type PacketEventSTLG struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    StartLights // Details of the start lights event
+}
+
+// Start lights
+type PacketEventLGOT struct {
+	M_header          packets.PacketHeader
+	M_eventStringCode [4]uint8
+	M_eventDetails    any // No event details for LGOT
 }
 
 // Drive through penalty served
