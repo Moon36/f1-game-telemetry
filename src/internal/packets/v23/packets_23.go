@@ -6,42 +6,43 @@ package v23
 import "github.com/moon36/f1-game-telemetry/src/internal/packets"
 
 // === Packet ID to packet type map ===
-var PACKET_MAP = map[uint8]func() interface{}{
-	CAR_MOTION_DATA_ID:           func() interface{} { return &PacketMotionData{} },
-	SESSION_DATA_ID:              func() interface{} { return &PacketSessionData{} },
-	LAP_DATA_ID:                  func() interface{} { return &PacketLapData{} },
-	EVENT_DATA_ID:                func() interface{} { return &GenericEvent{} },
-	PARTICIPANTS_DATA_ID:         func() interface{} { return &PacketParticipantsData{} },
-	CAR_SETUP_DATA_ID:            func() interface{} { return &PacketCarSetupData{} },
-	CAR_TELEMETRY_DATA_ID:        func() interface{} { return &PacketCarTelemetryData{} },
-	CAR_STATUS_DATA_ID:           func() interface{} { return &PacketCarStatusData{} },
-	FINAL_CLASSIFICATION_DATA_ID: func() interface{} { return &PacketFinalClassificationData{} },
-	LOBBY_INFO_DATA_ID:           func() interface{} { return &PacketLobbyInfoData{} },
-	CAR_DAMAGE_DATA_ID:           func() interface{} { return &PacketCarDamageData{} },
-	SESSION_HISTORY_DATA_ID:      func() interface{} { return &PacketSessionHistoryData{} },
-	TYRE_SET_DATA_ID:             func() interface{} { return &PacketTyreSetsData{} },
-	CAR_MOTION_EX_DATA_ID:        func() interface{} { return &PacketMotionExData{} },
+var PACKET_MAP = map[uint8]func() any{
+	CAR_MOTION_DATA_ID:           func() any { return &PacketMotionData{} },
+	SESSION_DATA_ID:              func() any { return &PacketSessionData{} },
+	LAP_DATA_ID:                  func() any { return &PacketLapData{} },
+	EVENT_DATA_ID:                func() any { return &GenericEvent{} },
+	PARTICIPANTS_DATA_ID:         func() any { return &PacketParticipantsData{} },
+	CAR_SETUP_DATA_ID:            func() any { return &PacketCarSetupData{} },
+	CAR_TELEMETRY_DATA_ID:        func() any { return &PacketCarTelemetryData{} },
+	CAR_STATUS_DATA_ID:           func() any { return &PacketCarStatusData{} },
+	FINAL_CLASSIFICATION_DATA_ID: func() any { return &PacketFinalClassificationData{} },
+	LOBBY_INFO_DATA_ID:           func() any { return &PacketLobbyInfoData{} },
+	CAR_DAMAGE_DATA_ID:           func() any { return &PacketCarDamageData{} },
+	SESSION_HISTORY_DATA_ID:      func() any { return &PacketSessionHistoryData{} },
+	TYRE_SET_DATA_ID:             func() any { return &PacketTyreSetsData{} },
+	CAR_MOTION_EX_DATA_ID:        func() any { return &PacketMotionExData{} },
 }
 
-var EVENT_MAP = map[string]func() interface{}{
-	EVENT_CODE_SSTA: func() interface{} { return &PacketEventSSTA{} },
-	EVENT_CODE_SEND: func() interface{} { return &PacketEventSEND{} },
-	EVENT_CODE_FTLP: func() interface{} { return &PacketEventFTLP{} },
-	EVENT_CODE_RTMT: func() interface{} { return &PacketEventRTMT{} },
-	EVENT_CODE_DRSE: func() interface{} { return &PacketEventDRSE{} },
-	EVENT_CODE_DRSD: func() interface{} { return &PacketEventDRSD{} },
-	EVENT_CODE_TMPT: func() interface{} { return &PacketEventTMPT{} },
-	EVENT_CODE_CHQF: func() interface{} { return &PacketEventCHQF{} },
-	EVENT_CODE_RCWN: func() interface{} { return &PacketEventRCWN{} },
-	EVENT_CODE_PENA: func() interface{} { return &PacketEventPENA{} },
-	EVENT_CODE_SPTP: func() interface{} { return &PacketEventSPTP{} },
-	EVENT_CODE_STLG: func() interface{} { return &PacketEventSTLG{} },
-	EVENT_CODE_DTSV: func() interface{} { return &PacketEventDTSV{} },
-	EVENT_CODE_SGSV: func() interface{} { return &PacketEventSGSV{} },
-	EVENT_CODE_FLBK: func() interface{} { return &PacketEventFLBK{} },
-	EVENT_CODE_BUTN: func() interface{} { return &PacketEventBUTN{} },
-	EVENT_CODE_RDFL: func() interface{} { return &PacketEventRDFL{} },
-	EVENT_CODE_OVTK: func() interface{} { return &PacketEventOVTK{} },
+var EVENT_MAP = map[string]func() any{
+	EVENT_CODE_SSTA: func() any { return &PacketEventSSTA{} },
+	EVENT_CODE_SEND: func() any { return &PacketEventSEND{} },
+	EVENT_CODE_FTLP: func() any { return &PacketEventFTLP{} },
+	EVENT_CODE_RTMT: func() any { return &PacketEventRTMT{} },
+	EVENT_CODE_DRSE: func() any { return &PacketEventDRSE{} },
+	EVENT_CODE_DRSD: func() any { return &PacketEventDRSD{} },
+	EVENT_CODE_TMPT: func() any { return &PacketEventTMPT{} },
+	EVENT_CODE_CHQF: func() any { return &PacketEventCHQF{} },
+	EVENT_CODE_RCWN: func() any { return &PacketEventRCWN{} },
+	EVENT_CODE_PENA: func() any { return &PacketEventPENA{} },
+	EVENT_CODE_SPTP: func() any { return &PacketEventSPTP{} },
+	EVENT_CODE_STLG: func() any { return &PacketEventSTLG{} },
+	EVENT_CODE_LGOT: func() any { return &PacketEventLGOT{} },
+	EVENT_CODE_DTSV: func() any { return &PacketEventDTSV{} },
+	EVENT_CODE_SGSV: func() any { return &PacketEventSGSV{} },
+	EVENT_CODE_FLBK: func() any { return &PacketEventFLBK{} },
+	EVENT_CODE_BUTN: func() any { return &PacketEventBUTN{} },
+	EVENT_CODE_RDFL: func() any { return &PacketEventRDFL{} },
+	EVENT_CODE_OVTK: func() any { return &PacketEventOVTK{} },
 }
 
 // === Event Codes ===
@@ -57,6 +58,7 @@ const EVENT_CODE_RCWN = "RCWN" // Race winner
 const EVENT_CODE_PENA = "PENA" // Penalty issued
 const EVENT_CODE_SPTP = "SPTP" // Speed trap triggered
 const EVENT_CODE_STLG = "STLG" // Start lights
+const EVENT_CODE_LGOT = "LGOT" // Lights out
 const EVENT_CODE_DTSV = "DTSV" // Drive through penalty served
 const EVENT_CODE_SGSV = "SGSV" // Stop go penalty served
 const EVENT_CODE_FLBK = "FLBK" // Flashback
@@ -236,14 +238,12 @@ type GenericEvent struct {
 type PacketEventSSTA struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for SSTA
 }
 
 // Session ended
 type PacketEventSEND struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for SEND
 }
 
 // Fastest lap
@@ -264,14 +264,12 @@ type PacketEventRTMT struct {
 type PacketEventDRSE struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for DRSE
 }
 
 // DRS disabled
 type PacketEventDRSD struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for DRSD
 }
 
 // Team mate in pits
@@ -285,7 +283,6 @@ type PacketEventTMPT struct {
 type PacketEventCHQF struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for CHQF
 }
 
 // Race winner
@@ -314,6 +311,12 @@ type PacketEventSTLG struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
 	M_eventDetails    StartLights // Details of the start lights event
+}
+
+// Start lights
+type PacketEventLGOT struct {
+	M_header          packets.PacketHeader
+	M_eventStringCode [4]uint8
 }
 
 // Drive through penalty served
@@ -348,7 +351,6 @@ type PacketEventBUTN struct {
 type PacketEventRDFL struct {
 	M_header          packets.PacketHeader
 	M_eventStringCode [4]uint8
-	M_eventDetails    any // No event details for RDFL
 }
 
 // Overtake

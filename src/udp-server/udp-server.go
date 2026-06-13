@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/binary"
 	"encoding/json"
-	"fmt"
 	"log"
 	"net"
 	"os"
@@ -13,39 +12,22 @@ import (
 	"time"
 
 	common "github.com/moon36/f1-game-telemetry/src/internal"
+	"github.com/moon36/f1-game-telemetry/src/internal/mappers"
 	"github.com/moon36/f1-game-telemetry/src/internal/packets"
-	v23 "github.com/moon36/f1-game-telemetry/src/internal/packets/v23"
 
 	"github.com/segmentio/kafka-go"
 )
 
-func processPacket23(packetID uint8, message []byte) (any, string, error) {
-	createPacket, prst := v23.PACKET_MAP[packetID]
-	if !prst {
-		return nil, "", fmt.Errorf("unknown packet ID: %d", packetID)
-	}
+/*
+Handles a client message. It parses the header, maps it to a version specific struct representation and submits the
+parsed and marshalled message with the corresponding topic to the message queue.
 
-	var packetData any
-	var err error
-	var topicName string
-
-	if packetID == v23.EVENT_DATA_ID {
-		if len(message) < 4 {
-			return nil, "", fmt.Errorf("supposed event data packet ('23) does not contain event code")
-		}
-		eventCode := string(message[:4])
-		createPacket, prst = v23.EVENT_MAP[eventCode]
-		if !prst {
-			return nil, "", fmt.Errorf("unknown event code: %s", eventCode)
-		}
-	}
-	packetData = createPacket()
-	topicName = v23.PACKET_TOPIC_MAP[packetID]
-
-	err = parsePacketData(message, packetData)
-	return packetData, topicName, err
-}
-
+Parameters:
+  - clientAddress: The address of the client that sent the message.
+  - message: The raw bytes of the message received from the client.
+  - kafkaProducer: A Kafka producer instance used to send messages to a Kafka topic.
+  - kafkaTimeout: The timeout duration for sending messages through the Kafka producer.
+*/
 func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProducer *kafka.Writer,
 	kafkaTimeout time.Duration) {
 	// Parse packet header
@@ -56,19 +38,21 @@ func handleClientMessage(clientAddress *net.UDPAddr, message []byte, kafkaProduc
 		return
 	}
 
-	// Generic packet variable and topic name
-	var packetData any
-	var topicName string
-
-	switch header.M_packetFormat {
-	case v23.PACKET_FORMAT_ID:
-		packetData, topicName, err = processPacket23(header.M_packetId, message)
-	default:
-		log.Println(clientAddress, "- Unknown packet format ID:", header.M_packetFormat,
-			"(This format might not be supported yet)")
+	mapper, prst := mappers.PACKET_MAPPER_MAP[header.M_packetFormat]
+	if !prst {
+		log.Println(clientAddress, "- No packet mapper registered (yet) for packet format:", header.M_packetFormat)
 		return
 	}
 
+	packetData, topicName, err := mapper.MapPacket(header, message)
+
+	if err != nil {
+		log.Println(clientAddress, "- Could not map packet of packet format:", header.M_packetFormat, "\n",
+			"Failed with error", err)
+		return
+	}
+
+	err = parsePacketData(message, packetData)
 	if err != nil {
 		log.Println(clientAddress, "- Error parsing packet data:", err)
 		return
@@ -96,6 +80,17 @@ func parsePacketData(message []byte, packet any) error {
 	return nil
 }
 
+/*
+Creates Kafka topics using the provided address, port, and topic list.
+
+Parameters:
+  - address: The address of the Kafka broker.
+  - port: The port number of the Kafka broker.
+  - topics: A list of topic names to create.
+
+Returns:
+  - error: An error if any step fails, otherwise nil.
+*/
 func createKafkaTopics(address string, port string, topics []string) error {
 	conn, err := kafka.Dial("tcp", address+":"+port)
 	if err != nil {
@@ -133,6 +128,19 @@ func createKafkaTopics(address string, port string, topics []string) error {
 	return err
 }
 
+/*
+Submits a JSON message to a Kafka topic with the given timeout.
+If the message cannot be sent within the timeout, it will return an error.
+
+Parameters:
+  - kafkaProducer: A Kafka producer instance.
+  - topic: The topic to send the message to.
+  - jsonMessage: The JSON message to be sent.
+  - timeout: The maximum time to wait for the message to be sent.
+
+Returns:
+  - error: If an error occurs during the message submission.
+*/
 func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage string, timeout time.Duration) error {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -154,8 +162,6 @@ func sendMessageToKafka(kafkaProducer *kafka.Writer, topic string, jsonMessage s
 		}
 	}
 
-	// TODO: Remove me
-	log.Println("Message sent to Kafka topic:", topic)
 	return nil
 }
 
