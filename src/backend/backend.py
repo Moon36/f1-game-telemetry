@@ -7,7 +7,6 @@ from os import getenv
 from sys import exit as sys_exit
 
 from kafka.errors import NoBrokersAvailable
-
 from utils import constants
 from utils.kafka_consumer import TelemetryConsumer
 from utils.ws_server import WebSocketServer
@@ -22,7 +21,7 @@ def __message_consumer_blocking_loop__(
     """
     This method is a blocking method that consumes messages from Kafka. The messages are then
     broadcasted to all connected WebSocket clients using the provided WebSocketServer instance.
-    
+
     :param consumer_obj: An instance of TelemetryConsumer to consume messages from Kafka.
     :param ws_server: An instance of WebSocketServer to broadcast messages to WebSocket clients.
     :param loop: The main event loop to schedule the async broadcast tasks.
@@ -33,7 +32,6 @@ def __message_consumer_blocking_loop__(
         print(f'Consumer subscribed to topics matching pattern: {kafka_topic_pattern}')
 
         for record in msg_consumer:
-            print(f"Received message on topic {record.topic}")
             # Schedule the async broadcast_message coroutine to be run on the main event loop
             loop.call_soon_threadsafe(
                 lambda record=record: asyncio.create_task(ws_server.broadcast_message(json.dumps({
@@ -48,7 +46,7 @@ def __message_consumer_blocking_loop__(
 async def kafka_consumer_task(consumer_obj: TelemetryConsumer, kafka_topic_pattern: str, ws_server: WebSocketServer):
     """
     Runs the Kafka consumer in a separate thread.
-    
+
     :param consumer_obj: An instance of TelemetryConsumer to consume messages from Kafka.
     :param ws_server: An instance of WebSocketServer to broadcast messages to WebSocket clients
     """
