@@ -41,7 +41,7 @@
             class="w-12 h-12"
           >
             <defs>
-              <radialGradient id="outerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <radialGradient id="outerGradientFL" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                 <stop
                   offset="45%"
                   :stop-color="getTempColor(props.data?.innerTemp?.[2], props.data?.compound)"
@@ -60,7 +60,7 @@
                 height="100"
                 rx="15"
                 ry="15"
-                fill="url(#outerGradient)"
+                fill="url(#outerGradientFL)"
                 opacity="1"
               />
             </g>
@@ -81,7 +81,7 @@
             class="w-12 h-12"
           >
             <defs>
-              <radialGradient id="outerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <radialGradient id="outerGradientFR" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                 <stop
                   offset="45%"
                   :stop-color="getTempColor(props.data?.innerTemp?.[3], props.data?.compound)"
@@ -100,7 +100,7 @@
                 height="100"
                 rx="15"
                 ry="15"
-                fill="url(#outerGradient)"
+                fill="url(#outerGradientFR)"
                 opacity="1"
               />
             </g>
@@ -168,7 +168,7 @@
             class="w-12 h-12"
           >
             <defs>
-              <radialGradient id="outerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <radialGradient id="outerGradientRL" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                 <stop
                   offset="45%"
                   :stop-color="getTempColor(props.data?.innerTemp?.[0], props.data?.compound)"
@@ -187,7 +187,7 @@
                 height="100"
                 rx="15"
                 ry="15"
-                fill="url(#outerGradient)"
+                fill="url(#outerGradientRL)"
                 opacity="1"
               />
             </g>
@@ -208,7 +208,7 @@
             class="w-12 h-12"
           >
             <defs>
-              <radialGradient id="outerGradient" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+              <radialGradient id="outerGradientRR" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
                 <stop
                   offset="45%"
                   :stop-color="getTempColor(props.data?.innerTemp?.[1], props.data?.compound)"
@@ -227,7 +227,7 @@
                 height="100"
                 rx="15"
                 ry="15"
-                fill="url(#outerGradient)"
+                fill="url(#outerGradientRR)"
                 opacity="1"
               />
             </g>
