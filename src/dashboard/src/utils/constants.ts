@@ -1,4 +1,4 @@
-export enum TyreCompounds {
+export enum TYRE_COMPOUNDS {
   C5 = 'C5',
   C4 = 'C4',
   C3 = 'C3',

@@ -1,5 +1,5 @@
 import type { TyreTelemetry } from '@/types/store/tyreTelemetry'
-import { TyreCompounds } from '@/utils/constants'
+import { TYRE_COMPOUNDS } from '@/utils/constants'
 import { defineStore } from 'pinia'
 
 export const useTyreStore = defineStore('tyreStore', {
@@ -47,40 +47,40 @@ export const useTyreStore = defineStore('tyreStore', {
      *
      * @returns The corresponding TyreCompounds enum value.
      */
-    tyreCompound(): TyreCompounds {
+    tyreCompound(): TYRE_COMPOUNDS {
       switch (this.actualTyreCompoundId) {
         case 7:
-          return TyreCompounds.INTERMEDIATE
+          return TYRE_COMPOUNDS.INTERMEDIATE
         case 8:
-          return TyreCompounds.WET
+          return TYRE_COMPOUNDS.WET
         case 9:
-          return TyreCompounds.DRY
+          return TYRE_COMPOUNDS.DRY
         case 10:
-          return TyreCompounds.WET
+          return TYRE_COMPOUNDS.WET
         case 11:
-          return TyreCompounds.SUPERSOFT
+          return TYRE_COMPOUNDS.SUPERSOFT
         case 12:
-          return TyreCompounds.SOFT
+          return TYRE_COMPOUNDS.SOFT
         case 13:
-          return TyreCompounds.MEDIUM
+          return TYRE_COMPOUNDS.MEDIUM
         case 14:
-          return TyreCompounds.HARD
+          return TYRE_COMPOUNDS.HARD
         case 15:
-          return TyreCompounds.WET
+          return TYRE_COMPOUNDS.WET
         case 16:
-          return TyreCompounds.C5
+          return TYRE_COMPOUNDS.C5
         case 17:
-          return TyreCompounds.C4
+          return TYRE_COMPOUNDS.C4
         case 18:
-          return TyreCompounds.C3
+          return TYRE_COMPOUNDS.C3
         case 19:
-          return TyreCompounds.C2
+          return TYRE_COMPOUNDS.C2
         case 20:
-          return TyreCompounds.C1
+          return TYRE_COMPOUNDS.C1
         case 21:
-          return TyreCompounds.C0
+          return TYRE_COMPOUNDS.C0
         default:
-          return TyreCompounds.UNKNOWN
+          return TYRE_COMPOUNDS.UNKNOWN
       }
     },
   },
