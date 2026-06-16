@@ -33,7 +33,9 @@
           :class="`flex items-center px-4 py-2 rounded-full text-sm font-medium transition-colors duration-200
             ${widget.visible ? 'bg-indigo-600 hover:bg-indigo-700 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'}`"
         >
-          <span v-html="widget.icon" class="mr-2 lucide"></span>
+          <span class="mr-2 lucide">
+            <img v-if="widget.icon" :src="widget.icon" class="w-4 h-4" />
+          </span>
           <span>{{ widget.name }}</span>
         </button>
       </div>
@@ -54,9 +56,9 @@
 <script setup lang="ts">
 import { ref, markRaw, computed } from 'vue'
 import { useWakeLock } from '@vueuse/core'
-import TyreInfo from './components/charts/TyreTempsWidget.vue'
-import { useTyreStore } from './stores/TyreStore'
-import { useWsStore } from './stores/WsStore'
+import TyreTemps from '@/components/charts/TyreTempsWidget.vue'
+import { useTyreStore } from '@/stores/TyreStore'
+import { useWsStore } from '@/stores/WsStore'
 
 const tyreStore = useTyreStore()
 const wsStore = useWsStore()
@@ -65,10 +67,10 @@ const wakeLock = ref(useWakeLock())
 
 const widgets = ref([
   {
-    id: 'TyreInfo',
-    name: 'Tyre Info',
-    icon: `<svg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M12 14v6'></path><path d='M12 2a10 10 0 0 0-7.32 3.25'></path><path d='M12 2a10 10 0 0 1 7.32 3.25'></path><path d='M21 9a10 10 0 0 1-9 13 10 10 0 0 1-9-13'></path><path d='M3 9a10 10 0 0 1 9-7 10 10 0 0 1 9 7'></path></svg>`,
-    component: markRaw(TyreInfo),
+    id: 'TyreTemps',
+    name: 'Tyre Temps',
+    icon: '/assets/icons/Tyre_Icon.svg',
+    component: markRaw(TyreTemps),
     visible: true,
   },
   // Add more widgets as needed
@@ -76,8 +78,6 @@ const widgets = ref([
 
 const iconSrc = computed(() => {
   const iconName = wakeLock.value.isActive ? 'Visible_Icon.svg' : 'Invisible_Icon.svg'
-
-  // This tells Vite to bundle and resolve the asset correctly
   return new URL(`/assets/icons/${iconName}`, import.meta.url).href
 })
 
@@ -88,7 +88,7 @@ const iconSrc = computed(() => {
  * @returns The data fetched for the widget.
  */
 function getWidgetData(widgetId: string) {
-  if (widgetId === 'TyreInfo') {
+  if (widgetId === 'TyreTemps') {
     return {
       innerTemp: tyreStore.innerTyreTemps,
       outerTemp: tyreStore.outerTyreTemps,
