@@ -1,27 +1,31 @@
 <template>
   <div id="app" class="p-4">
-    <header
-      class="mb-4 flex flex-col sm:flex-row justify-between items-center bg-gray-800 p-4 rounded-lg shadow-lg"
-    >
-      <span
-        class="w-3 h-3 rounded-full mr-3 relative group"
-        :class="wsStore.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
-        style="box-shadow: 0 0 8px 2px currentColor"
-        aria-label="Connection status"
-      >
+    <header class="mb-4 grid grid-cols-3 items-center bg-gray-800 p-4 rounded-lg shadow-lg">
+      <div class="flex items-center">
         <span
-          class="absolute left-1/2 bottom-full mb-2 px-2 py-1 rounded bg-gray-900 text-gray-100 text-xs whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10"
+          class="w-3 h-3 rounded-full mr-3 relative group"
+          :class="wsStore.wsConnected ? 'bg-green-500' : 'bg-red-500 animate-pulse'"
+          style="box-shadow: 0 0 8px 2px currentColor"
+          aria-label="Connection status"
+          :title="wsStore.wsConnected ? 'Backend Connected' : 'Backend not Connected'"
         >
-          {{ wsStore.wsConnected ? 'Backend Connected' : 'Backend not Connected' }}
         </span>
-      </span>
-      <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0">
+        <img
+          v-if="wakeLock.isSupported"
+          :src="iconSrc"
+          @click="toggleWakeLock"
+          alt="Wake-Lock-Icon"
+          class="w-6 h-6 ml-2"
+          :title="wakeLock.isActive ? 'Disable Wake Lock' : 'Enable Wake Lock'"
+        />
+      </div>
+      <h1 class="text-2xl font-bold text-gray-100 flex items-center mb-2 sm:mb-0 justify-center">
         <img src="/assets/icons/Dashboard_Icon.svg" alt="Dashboard Icon" class="w-7 h-7 mr-3" />
         F1 Telemetry Dashboard
       </h1>
 
       <!-- Header to toggle widgets -->
-      <div class="flex flex-wrap gap-2">
+      <div class="flex flex-wrap gap-2 justify-end">
         <button
           v-for="widget in widgets"
           :key="widget.id"
@@ -48,13 +52,16 @@
 <style scoped></style>
 
 <script setup lang="ts">
-import { ref, markRaw } from 'vue'
+import { ref, markRaw, computed } from 'vue'
+import { useWakeLock } from '@vueuse/core'
 import TyreInfo from './components/charts/TyreTempsWidget.vue'
 import { useTyreStore } from './stores/TyreStore'
 import { useWsStore } from './stores/WsStore'
 
 const tyreStore = useTyreStore()
 const wsStore = useWsStore()
+
+const wakeLock = ref(useWakeLock())
 
 const widgets = ref([
   {
@@ -66,6 +73,13 @@ const widgets = ref([
   },
   // Add more widgets as needed
 ])
+
+const iconSrc = computed(() => {
+  const iconName = wakeLock.value.isActive ? 'Visible_Icon.svg' : 'Invisible_Icon.svg'
+
+  // This tells Vite to bundle and resolve the asset correctly
+  return new URL(`/assets/icons/${iconName}`, import.meta.url).href
+})
 
 /**
  * Fetch data based on the widget ID.
@@ -94,6 +108,17 @@ function toggleWidget(widgetId: string) {
   const widget = widgets.value.find((w) => w.id === widgetId)
   if (widget) {
     widget.visible = !widget.visible
+  }
+}
+
+/**
+ * Toggles the wake lock.
+ */
+function toggleWakeLock() {
+  if (wakeLock.value.isActive) {
+    wakeLock.value.release()
+  } else {
+    wakeLock.value.request('screen')
   }
 }
 </script>
