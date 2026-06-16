@@ -4,6 +4,7 @@ import { createPinia } from 'pinia'
 import { useWsStore } from '@/stores/WsStore'
 import { useTyreStore } from '@/stores/TyreStore'
 import { parserMap } from '@/services/parsers/parserMapper'
+import * as constants from '@/utils/constants.ts'
 import type { GenericRawTelemetry, Header } from './types/packets/packetDefinitions'
 
 createApp(App).use(createPinia()).mount('#app')
@@ -98,13 +99,13 @@ function handleWSMessage(event: MessageEvent) {
   const parser = parserMap[header.M_packetFormat]
 
   switch (message.topic) {
-    case 'telemetry.car_telemetry': {
+    case constants.TOPIC_CAR_TELEMETRY_DATA: {
       const carData = parser.parseCarTelemetry(packet, player_id)
 
       tyreStore.updateTyreTemps(carData.innerTyreTemps, carData.outerTyreTemps)
       break
     }
-    case 'telemetry.car_status': {
+    case constants.TOPIC_CAR_STATUS_DATA: {
       // Handle car status data
       const statusData = parser.parseCarStatusTelemetry(packet, player_id)
       tyreStore.updateTyreCompound(statusData.actualTyreCompoundId)
