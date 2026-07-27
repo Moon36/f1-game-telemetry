@@ -1,3 +1,5 @@
+Check out the [development](https://github.com/Moon36/f1-game-telemetry/tree/development) branch for the latest changes.
+
 # F1 Game Telemetry Dashboard
 A dashboard for visualizing telemetry data from F1 games.
 
